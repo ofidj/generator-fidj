@@ -1,0 +1,33 @@
+<ion-header>
+    <ion-navbar>
+        <button ion-button menuToggle>
+            <ion-icon name="menu"></ion-icon>
+        </button>
+        <ion-title><%= appName %></ion-title>
+    </ion-navbar>
+</ion-header>
+
+<ion-content>
+    <p style="text-align:right">
+
+        <a ion-button icon-start round outline color="primary"
+            href="https://github.com/yourepo/<%= appName %>" target="_blank">
+            <ion-icon name="logo-github"></ion-icon>
+            Contribute<br>@{{appVersion}}
+        </a>
+
+    </p>
+    <ion-list>
+        <ion-item>
+            {{profile.getEmail()}}
+        </ion-item>
+        <ion-item *ngFor="let role of profile.getRoles()">
+            {{role}}
+        </ion-item>
+    </ion-list>
+    <p style="text-align:center">
+        <button ion-button color="danger" (click)="logout()">logout</button>
+    </p>
+
+
+</ion-content>

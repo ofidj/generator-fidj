@@ -1,0 +1,21 @@
+language: node_js
+node_js:
+  - v8
+install:
+  - npm install -g gulp
+  - npm install -g codecov
+  - npm install
+script:
+  - npm test
+  - codecov
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
+  - npm install gulp
+deploy:
+  provider: npm
+  email: mat@mlefree.com
+  api_key:
+    secure: L7Bdfs9m3bjbWMXjT/lOZFw2KjmxcSfPfwCBgneeHoKGCIKUQW04hUFYzLz+noiCSPqoJNweRYokeLfWpkeMIO9/W60rTwRtggJM+0F6I8kmNJ2shRi0gUtTAzGd7aba32/BHSTIM3RSQt0hKSn5kYaq4Ar8F8QqRH3v3aOS27krrNr76EjYJ067wNtb6UUONUFc+voeQdPc9X2KU6uvJm6BKjjf684/fzofFamvfiyy3LPF1kxt+pirVNoHkNLuB239z7oVD3M8aRjZrJSQKWmTELnKKbyPusGzpuPCuesduI8nRW2hEOq9oARO19XOKEHnNXfasAFd/PJqAdqvV8+XmK1UQoWc2ruSmPdunpplfuUTgkt7Ihcj8Q0eqJvyYFfQQeGG7C0X1TnIkMvSv94iIzbIHGi2+di0khUgwjSutiX9BlLjyYkvd1/Wix4CzMf/JGiHfuyTyq7XfcX23sMvpkiTM8kxENP4V3xevatXnLWkOlXPttCKGU37fF1MK0B8qLiIpPfA4dt9k+4ImCmS9UDUJ7zVIlocZlTkGxZ6zMOAAfAqlkh1VX+JPH9ThqGVUBCXIAvRXIYWLSQ7uBRzKx8c/zLntCxOubwsyqH5RHtIEAjk9UNxNTI7dmy365shyU66ZFuRXHT/cY4Gb6o/IjUezm5gW4ec/k/w+0o=
+  on:
+    tags: false
+    repo: ofidj/generator-fidj
