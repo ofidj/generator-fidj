@@ -8,7 +8,7 @@
 
 ## Prerequisite
 
-Look at our gist : https://gist.github.com/mlefree/2156f66dfb441f107bef157dde56a836
+Look at mat's gist : https://gist.github.com/mlefree/2156f66dfb441f107bef157dde56a836
 
 ## Installation
 
