@@ -5,6 +5,7 @@ install:
 - npm install -g gulp
 - npm install -g codecov
 - npm install
+- npm run install:after
 script:
 - npm test
 - codecov
