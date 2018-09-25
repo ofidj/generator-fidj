@@ -14,8 +14,6 @@ after_success:
 - npm install gulp
 after_deploy:
 - npm version patch -m "travis deploy done."
-- git add
-- git commit -m "travis deploy done.."
 - git push
 deploy:
   provider: npm
