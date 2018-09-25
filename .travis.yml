@@ -1,14 +1,18 @@
 language: node_js
 node_js:
-- v8
+- 10
+cache:
+  bundler: true
+  directories:
+  - node_modules
 install:
 - npm install -g gulp
-- npm install -g codecov
+- #npm install -g codecov
 - npm install
 - npm run install:after
 script:
 - npm test
-- codecov
+- #codecov
 after_success:
 - bash <(curl -s https://codecov.io/bash)
 - npm install gulp
