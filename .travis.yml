@@ -12,10 +12,15 @@ script:
 after_success:
 - bash <(curl -s https://codecov.io/bash)
 - npm install gulp
+after_deploy:
+- npm version patch -m "travis deploy done."
+- git add
+- git commit -m "travis deploy done.."
+- git push
 deploy:
   provider: npm
   email: mat@mlefree.com
   api_key:
-    secure: F4wUxT5Ke7ebfRGt6NfHZCON06ibx/AqWYp5hNHbLMG7Amu5h24UfKhO6tw1DCR5IglqV5+0KkPvFSir6JTK1YJS1t0os9BiMdXoT8lNammQSQT8W+SCXHDqfPyUM5uO4d2v9CwXZXGQGyJ+qfyMidLfqY5w6eO9Ssob9xrv15vuv4B9Xd8VZIflKAYbXaoFryZa9yP3k/jNSbooA3KL3HP94sRGI6GmxOFeSMDipUuKkFjbVHB5Nws6iqTm6u3oLJaPzYA8hFUSv9WFofbuxjeJC7uk1nAlgymmnGMdojjcGmqDBujr4fLGSp5ckZ6yXqoHrd0ZTiueCr+sjJPkm2L8dqf59WGjZg/Jx1h/661AD3HyjS75LM+MHi+7fshkw8AzDeey+TX2/WGeUW6m4vZ6plTlPA+TCPOUuwj6/hZctNZ09mDU8unGyssI3UuR2lIhVb8L0t8PMDktbFAlIeVgUipn3wG8t5Y82HQQHW7oHE8iFpu+tKDqKx8woYiZbMA5CMnDf/qzb3RF2EhsRPPISkwBsui75ggWev07yxXwZZpaXqSoWncNhEap6qyp4tiDNEOI2BUkDPdKQoGDilipQdoeQLAwglj35cQ4O/rJOMQP7jLae4c+iXtYTTwHfvXvOwpiw46qPSQEt35S9lswmCxRRWWiAMMxiiq2mBI=
+    secure: bSmzOZ3VJl2+L9Rl9wykZJAwXpaRB1H3sIwQvq7+RB9MmU0hUo3b+Yz8Wk1Bf1xGJSeSjSnlI0Cwwr1wS0oJr+ECwyCot9NBHKa7YJUIr/iOyxpaFoc9YU+BT+MUaR+Y6Ag/GCV7Yd5RTTHAnLUXlZFWlv04w5DFaDry3w7pDjVpwJ7HP7jMT0cxR0mnjLmi/+cDc3wH2DRb+1sogigwZFmzlgrgfmX//86JQINCSbJRCrrdq2vKXati2tOM/NSgRoZ95yUwxHsnmZliw9oQ1cEAxklEjfrJFBlZP4jiXaUA+HNAW+1NNWRnggJTRSNQAztkBveRVabD5QQ3gje824wsrmmYbe/C8KbX3SOcs2e5WPq2ohVgXfuDpDGtHw2TIOUE3Pbj99pnS4Kk4ZXK7O8HWQN/CkJLnxYID88zmq1mIFXpdRQU7NPThkv5E2XTORtED+Vf/qMM0MEa9PE+1cCDOD9eTl0MAL1TtqFvK3ASCn2K33loQQ8R2TBLln4fATGwgRwBXNzxx5j2G4wxnKtV1Je8PWVz6P0oAkTH13oN8JkDaYYR/zYYxKdsGi56hXx2nBnZtTrYloA94IBCe6jwBmzroMy1gPqkuRr/kwPni8pm0DfEkuCnMmyXcEsM+PkBTRZE7okPgsITLRb0ywTu4tcRfyvKZPsvpPNtsaY=
   on:
     branch: master
