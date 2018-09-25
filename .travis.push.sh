@@ -26,9 +26,10 @@ setup_git() {
 
 build_version() {
     echo "Build + Docs + Bump."
-    npm run build
-    npm run docs
-    npm run bump
+    #npm run build
+    #npm run docs
+    #npm run bump
+    npm version patch -m "[ci skip] travis deploy done."
 }
 
 push_git() {
@@ -44,5 +45,5 @@ push_git() {
 ###########
 
 setup_git
-# build_version
+build_version
 push_git

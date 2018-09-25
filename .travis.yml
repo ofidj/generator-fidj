@@ -17,7 +17,6 @@ after_success:
 - #bash <(curl -s https://codecov.io/bash)
 - #npm install gulp
 after_deploy:
-- npm version patch -m "[ci skip] travis deploy done."
 - bash .travis.push.sh
 deploy:
   provider: npm
