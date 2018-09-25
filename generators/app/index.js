@@ -1,23 +1,59 @@
 'use strict';
-var Generator = require('yeoman-generator');
-var chalk = require('chalk');
-var yosay = require('yosay');
-var mkdirp = require('mkdirp');
+const Generator = require('yeoman-generator');
+const commandExists = require('command-exists').sync;
+const yosay = require('yosay');
+const chalk = require('chalk');
+//const wiredep = require('wiredep');
+const mkdirp = require('mkdirp');
+// const _s = require('underscore.string');
 
-module.exports = Generator.extend({
-  prompting: function () {
-    // Have Yeoman greet the user.
-    this.log(yosay(
-      'Welcome to ' + chalk.red('fidj.ovh') + ' generator'
-    ));
+module.exports = class extends Generator {
+  constructor(args, opts) {
+    super(args, opts);
 
-    var promptConditions = [
-      {
-        type: 'confirm',
-        name: 'hasBeenRecordedInFidjOvh',
-        message: 'Did you recorded your app in fidj.ovh and received your appId ?',
-        default: false
-      }];
+    this.option('skip-welcome-message', {
+      desc: 'Skips the welcome message',
+      type: Boolean
+    });
+
+    this.option('skip-install-message', {
+      desc: 'Skips the message after the installation of dependencies',
+      type: Boolean
+    });
+
+    this.option('test-framework', {
+      desc: 'Test framework to be invoked',
+      type: String,
+      defaults: 'mocha'
+    });
+
+    this.option('babel', {
+      desc: 'Use Babel',
+      type: Boolean,
+      defaults: true
+    });
+  }
+
+  initializing() {
+    this.pkg = require('../../package.json');
+    // this.composeWith(
+    //   require.resolve(`generator-${this.options['test-framework']}/generators/app`), {
+    //     'skip-install': this.options['skip-install']
+    //   }
+    // );
+  }
+
+  prompting() {
+    if (!this.options['skip-welcome-message']) {
+      this.log(yosay('\'Allo \'Welcome to ' + chalk.red('fidj.ovh') + ' generator'));
+    }
+
+    var promptConditions = [{
+      type: 'confirm',
+      name: 'hasBeenRecordedInFidjOvh',
+      message: 'Did you recorded your app in fidj.ovh and received your appId ?',
+      default: false
+    }];
 
     var prompts = [
       // {
@@ -67,8 +103,7 @@ module.exports = Generator.extend({
         var packageDefault = 'ovh.' + (pack ? pack : 'fidj') + '.' + age;
 
         //todo based onUserName / appName : package, homepage
-        var prompts02 = [
-          {
+        var prompts02 = [{
             type: 'input',
             name: 'appId',
             message: 'Your app Id'
@@ -84,7 +119,8 @@ module.exports = Generator.extend({
             name: 'appHomepage',
             message: 'Home page url',
             default: 'https://fidj.ovh/_/' + age
-          }];
+          }
+        ];
 
         return self.prompt(prompts02);
       })
@@ -94,9 +130,9 @@ module.exports = Generator.extend({
       .catch(function (err) {
         self.log(yosay('Sorry : ' + chalk.red(err) + ' See you in 2 minutes ?'));
       });
-  },
+  }
 
-  writing: function () {
+  writing() {
     var self = this;
     if (!self.conditions.hasBeenRecordedInFidjOvh) return;
 
@@ -112,9 +148,9 @@ module.exports = Generator.extend({
       appPackage: (self.props02.appPackage),
       appId: self.props02.appId,
       appVersion: version,
-      appKeywords: 'mobile angular fidj',//self.props02.appKeywords,
-      appYear: now.getFullYear(),//self.props02.appYear,
-      appColor: 'white'//self.props02.appColor
+      appKeywords: 'mobile angular fidj', //self.props02.appKeywords,
+      appYear: now.getFullYear(), //self.props02.appYear,
+      appColor: 'white' //self.props02.appColor
     };
 
     //if (this.props.appType === 'angular') {
@@ -177,12 +213,17 @@ module.exports = Generator.extend({
     //}
     //this.mkdir('helpers')
     //this.mkdir('www')
+  }
 
-  },
 
-  install: function () {
+  install() {
     var self = this;
     if (!self.conditions.hasBeenRecordedInFidjOvh) return;
     this.installDependencies();
+
   }
-});
+
+  end() {
+
+  }
+};

@@ -40,7 +40,7 @@ function configSrcTask() {
 
 const fidjId = process.env.FIDJ_ID;
 const fidjProd = process.env.FIDJ_PROD || 'true';
-gulp.task('www-fidjId', function () {
+gulp.task('config:www', function () {
 
   if (fidjId && fidjProd) {
     return gulp.src(['www/build/main.js'])
