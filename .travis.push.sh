@@ -10,7 +10,7 @@ fi
 
 setup_git() {
     echo "Setup Git."
-    git init
+    # git init
     git config --global user.email "travis@travis-ci.org"
     git config --global user.name "Travis CI"
     git remote -v
