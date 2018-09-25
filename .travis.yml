@@ -6,7 +6,7 @@ cache:
   directories:
   - node_modules
 install:
-- npm install -g gulp
+- #npm install -g gulp
 - #npm install -g codecov
 - npm install
 - npm run install:after
@@ -14,8 +14,8 @@ script:
 - npm test
 - #codecov
 after_success:
-- bash <(curl -s https://codecov.io/bash)
-- npm install gulp
+- #bash <(curl -s https://codecov.io/bash)
+- #npm install gulp
 after_deploy:
 - npm version patch -m "[ci skip] travis deploy done."
 - bash .travis.push.sh
