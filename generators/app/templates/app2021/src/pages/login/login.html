@@ -1,0 +1,56 @@
+<ion-content padding>
+
+
+    <ion-grid>
+        <ion-row justify-content-center>
+            <ion-col col-md-8>
+                <ion-card style="background-color:transparent">
+                    <ion-card-header style="color:white;">
+                        <h1 style="color:white; text-align: center"><%= appName %></h1>
+                        <ul>
+                            <li>This <%= appDescription %> app helps you to exchange on feature's value with your team.</li>
+                            <li>Estimate and show card value or cost of each item.</li>
+                            <li>Store feature linked to value.</li>
+                        </ul>
+                    </ion-card-header>
+                    <ion-card-content>
+
+                        <form #heroForm="ngForm">
+                            <ion-item>
+                                <ion-input
+                                        type="email" placeholder="valid.email@required.com" required
+                                        [(ngModel)]="userLoginEmail" name="userLoginEmail"
+                                        pattern=".{1,}@[_a-z0-9A-Z]+(\.[a-z0-9A-Z]+)+"></ion-input>
+                            </ion-item>
+                            <ion-item>
+                                <ion-input type="password" placeholder="password"
+                                           [(ngModel)]="userLoginPassword" name="userLoginPassword"
+                                           required></ion-input>
+                            </ion-item>
+
+                            <div style="padding-top:20px">
+                                <button ion-button block
+                                        (click)="login(userLoginEmail, userLoginPassword)"
+                                        [disabled]="!userLoginEmail || !heroForm.form.valid || !userLoginPassword">
+                                    Login
+                                </button>
+                                <br><br>
+                                <a ion-button block color="light" clear
+                                   href="https://fidj.ovh/forgot"
+                                   target="_blank">
+                                    Forgot your login/password ?</a>
+                                <a ion-button block color="light" clear
+                                        (click)="loginAsDemo()">
+                                    Test as a demo user...
+                                </a>
+                            </div>
+                        </form>
+                    </ion-card-content>
+                </ion-card>
+            </ion-col>
+        </ion-row>
+    </ion-grid>
+
+    <span style="float:right;font-size:10px;" app-version>version: {{appVersion}}</span>
+
+</ion-content>

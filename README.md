@@ -8,33 +8,49 @@
 
 ## Prerequisite
 
+TODO refresh :
 Look at mat's gist : https://gist.github.com/mlefree/2156f66dfb441f107bef157dde56a836
 
 ## Installation
 
-First, install [Yeoman](http://yeoman.io) and generator-fidj using [npm](https://www.npmjs.com/) (we assume you have pre-installed [node.js](https://nodejs.org/)).
-
+First, install [Yeoman](http://yeoman.io) and generator-fidj using [npm](https://www.npmjs.com/) (we assume you have pre-installed [node.js](https://nodejs.org/)) :
 ```bash
 npm install -g yo
+npm install -g @ionic/cli
 npm install -g generator-fidj
 ```
-
 Then generate your new project:
-
 ```bash
 yo fidj
 ```
+or as expert :
+```bash
+yo fidj TODO
+```
 
-## Getting To Know Yeoman
+## Development
 
-* Yeoman has a heart of gold.
-* Yeoman is a person with feelings and opinions, but is very easy to work with.
-* Yeoman can be too opinionated at times but is easily convinced not to be.
-* Feel free to [learn more about Yeoman](http://yeoman.io/).
+Make sure you've got yeoman and bower installed :
+```bash
+npm install -g yo
+```
+
+Clone the repo, install it :
+```bash
+cd generator-fidj
+npm install
+npm link
+yo name
+```
+And then use your local Fidj generator :
+```bash
+mkdir your-app && cd your-app && yo fidj my-app 3 your-app-id me-as-user "my description" 
+# test app : npm start
+```
 
 ## License
 
-MIT © [fidj.ovh](fidj.ovh)
+MIT 2021 © [fidj.ovh](fidj.ovh)
 
 [npm-image]: https://badge.fury.io/js/generator-fidj.svg
 [npm-url]: https://npmjs.org/package/generator-fidj

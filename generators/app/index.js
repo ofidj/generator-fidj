@@ -1,229 +1,190 @@
-'use strict';
 const Generator = require('yeoman-generator');
-const commandExists = require('command-exists').sync;
 const yosay = require('yosay');
 const chalk = require('chalk');
-//const wiredep = require('wiredep');
-const mkdirp = require('mkdirp');
-// const _s = require('underscore.string');
 
 module.exports = class extends Generator {
   constructor(args, opts) {
     super(args, opts);
+
+    this.hasBeenRecordedInFidjOvh = true;
+    this.templateName = 'agile-pokr'; //'app2021'; //'agile-pokr' ''ionic2020'
 
     this.option('skip-welcome-message', {
       desc: 'Skips the welcome message',
       type: Boolean
     });
 
-    this.option('skip-install-message', {
-      desc: 'Skips the message after the installation of dependencies',
-      type: Boolean
-    });
-
-    this.option('test-framework', {
-      desc: 'Test framework to be invoked',
-      type: String,
-      defaults: 'mocha'
-    });
-
-    this.option('babel', {
-      desc: 'Use Babel',
-      type: Boolean,
-      defaults: true
-    });
+    this.argument('appname', {type: String, required: false, desc: 'todo'});
+    this.argument('appType', {type: Number, required: false, desc: '1|2|3'});
+    this.argument('appId', {type: String, required: false});
+    this.argument('appUserName', {type: String, required: false});
+    this.argument('appDescription', {type: String, required: false});
   }
 
-  initializing() {
+  async initializing() {
     this.pkg = require('../../package.json');
-    // this.composeWith(
-    //   require.resolve(`generator-${this.options['test-framework']}/generators/app`), {
-    //     'skip-install': this.options['skip-install']
-    //   }
-    // );
   }
 
-  prompting() {
-    if (!this.options['skip-welcome-message']) {
+  async prompting() {
+    if (!this.options['skip-welcome-message'] && !this.options.appId) {
       this.log(yosay('\'Allo \'Welcome to ' + chalk.red('fidj.ovh') + ' generator'));
+
+      const promptConditions = [{
+        type: 'confirm',
+        name: 'hasBeenRecordedInFidjOvh',
+        message: 'Did you recorded your app in fidj.ovh and received your appId ?',
+        default: false
+      }];
+
+      const conditions = await this.prompt(promptConditions);
+      this.hasBeenRecordedInFidjOvh = !!conditions.hasBeenRecordedInFidjOvh;
+      if (!this.hasBeenRecordedInFidjOvh) {
+        const err = 'You need to submit your app on https://fidj.ovh first. ' +
+          'It will help you to build a valid app name and give you a appId.';
+        this.log(yosay('Sorry : ' + chalk.red(err) + ' See you in 2 minutes ?'));
+      }
     }
 
-    var promptConditions = [{
-      type: 'confirm',
-      name: 'hasBeenRecordedInFidjOvh',
-      message: 'Did you recorded your app in fidj.ovh and received your appId ?',
-      default: false
-    }];
-
-    var prompts = [
-      // {
-      //   type: 'input',
-      //   name: 'appType',
-      //   message: 'Technologies : angular, (soon)angular2 ',
-      //   choices: ['angular'],
-      //   default: 'angular'
-      // },
-      {
-        type: 'input',
-        name: 'appUserName',
-        message: 'Your (github) user name'
-      },
-      {
-        type: 'input',
-        name: 'appName',
-        message: 'Your app name (as shown on device)',
-        default: this.appname.replace(/[^\w\s]/gi, '').replace(/\s/g, "_").replace(/\s+/g, '').replace(/[\. ,:-]+/g, '').toLowerCase()
-      },
-      {
-        type: 'input',
-        name: 'appDescription',
-        message: 'App description',
-        default: this.appname
-      }
-    ];
-
-    var self = this;
-    return self
-      .prompt(promptConditions)
-      .then(function (conditions) {
-
-        self.conditions = conditions;
-        if (!self.conditions.hasBeenRecordedInFidjOvh) {
-          return Promise.reject('You need to submit your app on https://fidj.ovh first. ' +
-            'It will help you to build a valid app name and give you a appId.');
+    if (!this.options.appname || !this.options.appUserName || !this.options.appDescription) {
+      const prompts = [
+        {
+          type: 'input',
+          name: 'appUserName',
+          message: 'Your (github) user name'
+        },
+        {
+          type: 'input',
+          name: 'appName',
+          message: 'Your app name (as shown on device)',
+          default: this.appname.replace(/[^\w\s]/gi, '').replace(/\s/g, '_').replace(/\s+/g, '').replace(/[\. ,:-]+/g, '').toLowerCase()
+        },
+        {
+          type: 'input',
+          name: 'appDescription',
+          message: 'App description',
+          default: this.appname
         }
+      ];
 
-        return self.prompt(prompts);
-      })
-      .then(function (props) {
-        self.props = props;
+      this.props = await this.prompt(prompts);
+    } else {
+      this.props = {
+        appName: this.options.appname,
+        appUserName: this.options.appUserName,
+        appDescription: this.options.appDescription
+      };
+    }
 
-        var pack = self.props.appUserName.replace(/[^\w\s]/gi, '').replace(/\s+/g, '').replace(/[\. ,:-]+/g, '').toLowerCase();
-        var age = self.props.appName.replace(/[^\w\s]/gi, '').replace(/\s/g, "_").replace(/\s+/g, '').replace(/[\. ,:-]+/g, '').toLowerCase();
-        var packageDefault = 'ovh.' + (pack ? pack : 'fidj') + '.' + age;
+    const pack = this.props.appUserName.replace(/[^\w\s]/gi, '').replace(/\s+/g, '').replace(/[\. ,:-]+/g, '').toLowerCase();
+    const age = this.props.appName.replace(/[^\w\s]/gi, '').replace(/\s/g, '_').replace(/\s+/g, '').replace(/[\. ,:-]+/g, '').toLowerCase();
+    const packageDefault = 'ovh.' + (pack ? pack : 'fidj') + '.' + age;
 
-        //todo based onUserName / appName : package, homepage
-        var prompts02 = [{
-            type: 'input',
-            name: 'appId',
-            message: 'Your app Id'
-          },
-          {
-            type: 'input',
-            name: 'appPackage',
-            message: 'Your app package name',
-            default: packageDefault
-          },
-          {
-            type: 'input',
-            name: 'appHomepage',
-            message: 'Home page url',
-            default: 'https://fidj.ovh/_/' + age
-          }
-        ];
+    if (!this.options.appId) {
+      const prompts02 = [{
+        type: 'input',
+        name: 'appId',
+        message: 'Your app Id'
+      },
+        {
+          type: 'input',
+          name: 'appPackage',
+          message: 'Your app package name',
+          default: packageDefault
+        },
+        {
+          type: 'input',
+          name: 'appHomepage',
+          message: 'Home page url',
+          default: 'https://fidj.ovh/_/' + age
+        }
+      ];
 
-        return self.prompt(prompts02);
-      })
-      .then(function (props02) {
-        self.props02 = props02;
-      })
-      .catch(function (err) {
-        self.log(yosay('Sorry : ' + chalk.red(err) + ' See you in 2 minutes ?'));
-      });
+      this.props02 = await this.prompt(prompts02);
+    } else {
+      this.props02 = {
+        appId: this.options.appId,
+        appPackage: packageDefault,
+        appHomepage: 'https://fidj.ovh/_/' + age
+      };
+    }
   }
 
-  writing() {
-    var self = this;
-    if (!self.conditions.hasBeenRecordedInFidjOvh) return;
+  async writing() {
+    if (!this.hasBeenRecordedInFidjOvh) {
+      return;
+    }
 
-    var now = new Date();
-    var version = '' + ('' + now.getFullYear()).substr(2) + '.' + (now.getMonth() + 1) + '.' + now.getDate();
+    let copyAll = true;
+    if (this.options.appType === 2) {
+      this.templateName = 'app2021';
+    } else if (this.options.appType === 3) {
+      this.templateName = 'ionic2020';
+      copyAll = false;
+    } else {
+      this.templateName = 'agile-pokr';
+    }
 
-    var appArguments = {
-      appName: self.props.appName,
-      appNameStrict: self.props.appName.replace(/[^\w\s]/gi, '').replace(/\s+/g, '').replace(/[\. ,:-]+/g, '').toLowerCase(),
-      appDescription: (self.props.appDescription),
-      appUserName: (self.props.appUserName),
-      appHomepage: (self.props02.appHomepage),
-      appPackage: (self.props02.appPackage),
-      appId: self.props02.appId,
+    const now = new Date();
+    const version = '' + ('' + now.getFullYear()).substr(2) + '.' + (now.getMonth() + 1) + '.' + now.getDate();
+
+    const appArguments = {
+      appName: this.props.appName,
+      appNameStrict: this.props.appName.replace(/[^\w\s]/gi, '').replace(/\s+/g, '').replace(/[\. ,:-]+/g, '').toLowerCase(),
+      appDescription: (this.props.appDescription),
+      appUserName: (this.props.appUserName),
+      appHomepage: (this.props02.appHomepage),
+      appPackage: (this.props02.appPackage),
+      appId: this.props02.appId,
       appVersion: version,
-      appKeywords: 'mobile angular fidj', //self.props02.appKeywords,
-      appYear: now.getFullYear(), //self.props02.appYear,
-      appColor: 'white' //self.props02.appColor
+      appKeywords: 'fidj',
+      appYear: now.getFullYear(),
+      appColor: 'white'
     };
 
-    //if (this.props.appType === 'angular') {
-
-    // Copy all non-dotfiles
     this.fs.copyTpl(
-      this.templatePath('agile-pokr/*'),
-      this.destinationPath(),
-      appArguments
-    );
-    this.fs.copyTpl(
-      this.templatePath('agile-pokr/.*'),
+      this.templatePath(this.templateName + '/*'),
       this.destinationPath(),
       appArguments
     );
 
     this.fs.copyTpl(
-      this.templatePath('agile-pokr/src'),
+      this.templatePath(this.templateName + '/.*'),
+      this.destinationPath(),
+      appArguments
+    );
+
+    this.fs.copyTpl(
+      this.templatePath(this.templateName + '/src'),
       this.destinationPath('src'),
       appArguments
     );
 
-    // Not templated
-    //mkdirp('hooks');
-    //mkdirp('platforms');
-    //mkdirp('resources');
-    //mkdirp('scss');
-    //mkdirp('www');
+    if (copyAll) {
+      this.fs.copy(
+        this.templatePath(this.templateName + '/platforms'),
+        this.destinationPath('platforms')
+      );
 
-    console.log('this.templatePath() : ', this.templatePath());
-    console.log('this.destinationPath() : ', this.destinationPath());
-    // this.fs.copy(
-    //   this.templatePath('agile-pokr/hooks'),
-    //   this.destinationPath('hooks')
-    // );
-    this.fs.copy(
-      this.templatePath('agile-pokr/platforms'),
-      this.destinationPath('platforms')
-    );
-    this.fs.copy(
-      this.templatePath('agile-pokr/resources'),
-      this.destinationPath('resources')
-    );
-    // this.fs.copy(
-    //   this.templatePath('agile-pokr/scss'),
-    //   this.destinationPath('scss')
-    // );
-    this.fs.copy(
-      this.templatePath('agile-pokr/tests'),
-      this.destinationPath('tests')
-    );
-    // this.fs.copy(
-    //   this.templatePath('aio1/www/js/config/.gitignore'),
-    //   this.destinationPath('www/js/config/.gitignore')
-    // );
+      this.fs.copy(
+        this.templatePath(this.templateName + '/resources'),
+        this.destinationPath('resources')
+      );
 
-    // this.fs.move('agile-pokr/tests/dot.gitignore', 'agile-pokr/tests/.gitignore');
-
-
-    //}
-    //this.mkdir('helpers')
-    //this.mkdir('www')
+      this.fs.copy(
+        this.templatePath(this.templateName + '/tests'),
+        this.destinationPath('tests')
+      );
+    }
   }
 
-
-  install() {
-    var self = this;
-    if (!self.conditions.hasBeenRecordedInFidjOvh) return;
-    this.installDependencies();
-
+  async install() {
+    if (!this.hasBeenRecordedInFidjOvh) {
+      return;
+    }
+    this.npmInstall();
   }
 
-  end() {
+  async end() {
 
   }
 };
