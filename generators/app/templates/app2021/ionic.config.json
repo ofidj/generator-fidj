@@ -1,0 +1,9 @@
+{
+  "name": "<%= appName %>",
+  "type": "fidj",
+  "integrations": {
+    "cordova": {},
+    "gulp": {}
+  },
+  "app_id": ""
+}

@@ -5,17 +5,8 @@ cache:
   bundler: true
   directories:
   - node_modules
-install:
-- #npm install -g gulp
-- #npm install -g codecov
-- npm install
-- npm run install:after
 script:
 - npm test
-- #codecov
-after_success:
-- #bash <(curl -s https://codecov.io/bash)
-- #npm install gulp
 after_deploy:
 - bash .travis.push.sh
 deploy:

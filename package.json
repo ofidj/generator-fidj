@@ -1,12 +1,8 @@
 {
   "name": "generator-fidj",
-  "version": "2.0.6",
+  "version": "2.1.0",
   "description": "build great mobile angular ionic apps based on fidj.ovh authentication",
   "homepage": "https://fidj.ovh",
-  "author": {
-    "name": "mlefree",
-    "email": "mat@mlefree.com"
-  },
   "files": [
     "generators"
   ],
@@ -18,27 +14,11 @@
     "yeoman-generator"
   ],
   "dependencies": {
-    "chalk": "^1.1.3",
-    "command-exists": "^1.2.7",
-    "mkdirp": "^0.5.1",
-    "yeoman-generator": "^3.1.1",
-    "yosay": "^1.2.1"
+    "chalk": "^2.4.2",
+    "yeoman-generator": "^4.12.0",
+    "yosay": "^2.0.2"
   },
-  "devDependencies": {
-    "eslint": "^3.1.1",
-    "eslint-config-xo-space": "^0.15.0",
-    "gulp": "^4.0.0",
-    "gulp-coveralls": "^0.1.0",
-    "gulp-eslint": "^3.0.1",
-    "gulp-exclude-gitignore": "^1.0.0",
-    "gulp-istanbul": "^1.0.0",
-    "gulp-line-ending-corrector": "^1.0.3",
-    "gulp-mocha": "^6.0.0",
-    "gulp-nsp": "^3.0.1",
-    "gulp-plumber": "^1.0.0",
-    "yeoman-assert": "^2.2.1",
-    "yeoman-test": "^2.0.0"
-  },
+  "devDependencies": {},
   "eslintConfig": {
     "extends": "xo-space",
     "env": {
@@ -46,10 +26,6 @@
     }
   },
   "repository": "https://github.com/ofidj/generator-fidj.git",
-  "scripts": {
-    "gulp": "gulp",
-    "install:after": "gulp prepublish",
-    "test": "gulp"
-  },
+  "scripts": {},
   "license": "MIT"
 }

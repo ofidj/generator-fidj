@@ -1,7 +1,6 @@
+.idea/
 node_modules/
 coverage/
-
-.idea/
-ionicV1*/
-ionicV2*/
+ionic*/
+*gitignored*
 
