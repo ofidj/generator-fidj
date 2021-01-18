@@ -7,18 +7,20 @@ module.exports = class extends Generator {
     super(args, opts);
 
     this.hasBeenRecordedInFidjOvh = true;
-    this.templateName = 'agile-pokr'; //'app2021'; //'agile-pokr' ''ionic2020'
+    this.templateName = 'app2018'; //'app2021'; //'app2018' ''ionic2020'
 
     this.option('skip-welcome-message', {
       desc: 'Skips the welcome message',
       type: Boolean
     });
 
-    this.argument('appname', {type: String, required: false, desc: 'todo'});
-    this.argument('appType', {type: Number, required: false, desc: '1|2|3'});
+    this.argument('appname', {type: String, required: false, desc: 'Your app name'});
+    this.argument('appType', {type: String, required: false, desc: 'For ex: "app2021" '});
     this.argument('appId', {type: String, required: false});
     this.argument('appUserName', {type: String, required: false});
     this.argument('appDescription', {type: String, required: false});
+    this.argument('appWelcome', {type: String, required: false});
+    this.argument('appContent', {type: String, required: false});
   }
 
   async initializing() {
@@ -71,7 +73,9 @@ module.exports = class extends Generator {
       this.props = {
         appName: this.options.appname,
         appUserName: this.options.appUserName,
-        appDescription: this.options.appDescription
+        appDescription: this.options.appDescription,
+        appWelcome: this.options.appWelcome || '<h1>Welcome</h1>',
+        appContent: this.options.appContent || '<h1>Hello</h1>'
       };
     }
 
@@ -115,13 +119,10 @@ module.exports = class extends Generator {
     }
 
     let copyAll = true;
-    if (this.options.appType === 2) {
-      this.templateName = 'app2021';
-    } else if (this.options.appType === 3) {
-      this.templateName = 'ionic2020';
-      copyAll = false;
+    if (this.options.appType === 'app2018') {
+      this.templateName = 'app2018';
     } else {
-      this.templateName = 'agile-pokr';
+      this.templateName = 'app2021';
     }
 
     const now = new Date();
@@ -130,10 +131,12 @@ module.exports = class extends Generator {
     const appArguments = {
       appName: this.props.appName,
       appNameStrict: this.props.appName.replace(/[^\w\s]/gi, '').replace(/\s+/g, '').replace(/[\. ,:-]+/g, '').toLowerCase(),
-      appDescription: (this.props.appDescription),
-      appUserName: (this.props.appUserName),
-      appHomepage: (this.props02.appHomepage),
-      appPackage: (this.props02.appPackage),
+      appDescription: this.props.appDescription,
+      appWelcome: this.props.appWelcome,
+      appContent: this.props.appContent,
+      appUserName: this.props.appUserName,
+      appHomepage: this.props02.appHomepage,
+      appPackage: this.props02.appPackage,
       appId: this.props02.appId,
       appVersion: version,
       appKeywords: 'fidj',
@@ -174,6 +177,11 @@ module.exports = class extends Generator {
         this.templatePath(this.templateName + '/tests'),
         this.destinationPath('tests')
       );
+
+      //this.fs.copy(
+      //  this.templatePath(this.templateName + '/www'),
+      //  this.destinationPath('www')
+      //);
     }
   }
 

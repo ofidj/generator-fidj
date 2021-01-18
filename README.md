@@ -42,9 +42,14 @@ npm install
 npm link
 yo name
 ```
-And then use your local Fidj generator :
+And then use your local Fidj generator : 
 ```bash
-mkdir your-app && cd your-app && yo fidj my-app 3 your-app-id me-as-user "my description" 
+mkdir your-app && cd your-app && \
+   yo fidj my-app app2021 your-app-id me-as-user "my description" \
+   "Welcome there" \
+   "Hey<br>Heres my content: <img src=https://3.bp.blogspot.com/-vX0tnGUE4j4/V7xOTtIm6rI/AAAAAAAABKI/xvKjK_Mx0QoKd9Ew3EF_e70_JFr0VQJ7wCK4B/s920/Retro_Mario_in_3D_flavor_by_cezkid.gif /><br> \o/ " 
+
+# look at the code : code .
 # test app : npm start
 ```
 

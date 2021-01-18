@@ -1,40 +1,23 @@
-import {ErrorHandler, NgModule} from '@angular/core';
-import {IonicApp, IonicErrorHandler, IonicModule, Refresher} from 'ionic-angular';
-import {StatusBar} from '@ionic-native/status-bar';
-import {Network} from "@ionic-native/network";
-import {SplashScreen} from '@ionic-native/splash-screen';
+import { NgModule } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { RouteReuseStrategy } from '@angular/router';
 
-import {MyApp} from './app.component';
-import {HomePage} from '../pages/home/home';
-import {SharedModule} from "./shared/shared.module";
-import {ProfilePage} from "../pages/profile/profile";
-import {LoginPage} from "../pages/login/login";
+import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
+import { SplashScreen } from '@ionic-native/splash-screen/ngx';
+import { StatusBar } from '@ionic-native/status-bar/ngx';
+
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
 
 @NgModule({
-    declarations: [
-        MyApp,
-        HomePage,
-        ProfilePage,
-        LoginPage
-    ],
-    imports: [
-        SharedModule,
-        IonicModule.forRoot(MyApp)
-    ],
-    bootstrap: [IonicApp],
-    entryComponents: [
-        MyApp,
-        HomePage,
-        ProfilePage,
-        LoginPage
-    ],
-    providers: [
-        StatusBar,
-        SplashScreen,
-        Network,
-        Refresher,
-        {provide: ErrorHandler, useClass: IonicErrorHandler}
-    ]
+  declarations: [AppComponent],
+  entryComponents: [],
+  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule],
+  providers: [
+    StatusBar,
+    SplashScreen,
+    { provide: RouteReuseStrategy, useClass: IonicRouteStrategy }
+  ],
+  bootstrap: [AppComponent]
 })
-export class AppModule {
-}
+export class AppModule {}
