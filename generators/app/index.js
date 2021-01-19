@@ -7,7 +7,7 @@ module.exports = class extends Generator {
     super(args, opts);
 
     this.hasBeenRecordedInFidjOvh = true;
-    this.templateName = 'app2018'; //'app2021'; //'app2018' ''ionic2020'
+    this.templateName = 'app2021'; //'app2021'; //'app2018' ''ionic2020'
 
     this.option('skip-welcome-message', {
       desc: 'Skips the welcome message',
