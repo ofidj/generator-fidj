@@ -15,6 +15,7 @@ First, install [Yeoman](http://yeoman.io) and generator-fidj using [npm](https:/
 ```bash
 npm install -g yo
 npm install -g @ionic/cli
+npm install -g @angular/cli
 npm install -g generator-fidj
 ```
 Then generate your new project:
@@ -40,7 +41,6 @@ Clone the repo, install it :
 cd generator-fidj
 npm install
 npm link
-yo name
 ```
 And then use your local Fidj generator : 
 ```bash

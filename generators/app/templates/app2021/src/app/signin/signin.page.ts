@@ -1,11 +1,12 @@
 import {Component, OnInit} from '@angular/core';
 //import {NavController} from 'ionic-angular';
-//TODO import {FidjService} from "fidj";
+import {FidjService} from "fidj";
 //import {HomePage} from "../home/home";
 //import {Profile} from "../../app/shared/profile.service";
 //import {version} from "../../app/shared/version.const";
 //import {Network} from "@ionic-native/network";
 import {Subscription} from "rxjs";
+import {Router} from "@angular/router";
 
 @Component({
     selector: 'signin',
@@ -20,19 +21,22 @@ export class SigninPage implements OnInit {
     appVersion: any;
 
     constructor(
-        //public navCtrl: NavController,
-          //      private network: Network,
-            //    private profile: Profile,
-            //TODO    private fidjService: FidjService
+        // public navCtrl: NavController,
+        //      private network: Network,
+        //    private profile: Profile,
+        private router: Router,
+        private fidjService: FidjService
     ) {
 
     }
 
     ngOnInit() {
 
-       // if (this.fidjService.isLoggedIn()) {
-            //this.navCtrl.setRoot(HomePage);
-       // }
+        if (this.fidjService.isLoggedIn()) {
+            return this.router.navigateByUrl('/tabs');
+        } else {
+            console.log('not logged in');
+        }
         // this.connected = this.network.onConnect().subscribe(data => {
         //     console.log(data);
         //     if (this.fidjService.isLoggedIn()) {
@@ -45,26 +49,24 @@ export class SigninPage implements OnInit {
         // this.connected.unsubscribe();
     }
 
-    login(email, pwd) {
+    async login(email, pwd) {
         // this.profile.setEmail(email);
-        // this.fidjService.login(email, pwd)
-        //     .then(() => {
-        //         this.navCtrl.setRoot(HomePage);
-        //     })
-        //     .catch(err => {
-        //         alert(JSON.stringify(err));
-        //         console.error(JSON.stringify(err, Object.getOwnPropertyNames(err)));
-        //     });
+        try {
+            await this.fidjService.login(email, pwd);
+        } catch (err) {
+            alert(JSON.stringify(err));
+            console.error(JSON.stringify(err, Object.getOwnPropertyNames(err)));
+        }
     }
 
-    loginAsDemo() {
+    async loginAsDemo() {
         // this.profile.setEmail('demo user');
-        // this.fidjService.loginAsDemo()
-        //     .then(() => {
-        //         this.navCtrl.setRoot(HomePage);
-        //     })
-        //     .catch(err => alert(JSON.stringify(err)));
-
+        try {
+            await this.fidjService.loginAsDemo();
+            await this.router.navigateByUrl('/tabs');
+        } catch (e) {
+            alert(e);
+        }
     }
 
 }
