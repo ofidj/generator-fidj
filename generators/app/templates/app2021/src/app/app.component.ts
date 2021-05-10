@@ -22,7 +22,7 @@ export class AppComponent {
 
   async initializeApp() {
     await this.platform.ready();
-    await this.fidjService.init(<%= appId %> <%= appOptions %>);
+    await this.fidjService.init('<%= appId %>' <%= appOptions %>);
     this.statusBar.styleDefault();
     this.splashScreen.hide();
   }

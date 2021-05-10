@@ -139,7 +139,7 @@ module.exports = class extends Generator {
       appHomepage: this.props02.appHomepage,
       appPackage: this.props02.appPackage,
       appId: this.props02.appId,
-      appOptions : this.options.appOptions ? this.options.appOptions : '',
+      appOptions: this.options.appOptions ? ', {' + this.options.appOptions + '}' : '',
       appVersion: version,
       appKeywords: 'fidj',
       appYear: now.getFullYear(),
