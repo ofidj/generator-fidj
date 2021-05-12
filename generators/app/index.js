@@ -17,6 +17,7 @@ module.exports = class extends Generator {
     this.argument('appname', {type: String, required: false, desc: 'Your app name'});
     this.argument('appType', {type: String, required: false, desc: 'For ex: "app2021" '});
     this.argument('appId', {type: String, required: false});
+    this.argument('appOptions', {type: String, required: false});
     this.argument('appUserName', {type: String, required: false});
     this.argument('appDescription', {type: String, required: false});
     this.argument('appWelcome', {type: String, required: false});
@@ -138,6 +139,7 @@ module.exports = class extends Generator {
       appHomepage: this.props02.appHomepage,
       appPackage: this.props02.appPackage,
       appId: this.props02.appId,
+      appOptions: this.options.appOptions ? ', {' + this.options.appOptions + '}' : '',
       appVersion: version,
       appKeywords: 'fidj',
       appYear: now.getFullYear(),

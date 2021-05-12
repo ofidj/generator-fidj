@@ -1,6 +1,6 @@
 {
   "name": "generator-fidj",
-  "version": "2.1.4",
+  "version": "3.3.0",
   "description": "build great mobile angular ionic apps based on fidj.ovh authentication",
   "homepage": "https://fidj.ovh",
   "files": [
@@ -18,7 +18,9 @@
     "yeoman-generator": "^4.12.0",
     "yosay": "^2.0.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "tslint": "^6.1.3"
+  },
   "eslintConfig": {
     "extends": "xo-space",
     "env": {
@@ -26,6 +28,8 @@
     }
   },
   "repository": "https://github.com/ofidj/generator-fidj.git",
-  "scripts": {},
+  "scripts": {
+    "test" : "echo nope"
+  },
   "license": "MIT"
 }
