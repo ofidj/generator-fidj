@@ -1,6 +1,6 @@
 language: node_js
 node_js:
-- 10
+- 14
 cache:
   bundler: true
   directories:
@@ -12,7 +12,6 @@ after_deploy:
 deploy:
   provider: npm
   email: mat@mlefree.com
-  api_key:
-    secure: bSmzOZ3VJl2+L9Rl9wykZJAwXpaRB1H3sIwQvq7+RB9MmU0hUo3b+Yz8Wk1Bf1xGJSeSjSnlI0Cwwr1wS0oJr+ECwyCot9NBHKa7YJUIr/iOyxpaFoc9YU+BT+MUaR+Y6Ag/GCV7Yd5RTTHAnLUXlZFWlv04w5DFaDry3w7pDjVpwJ7HP7jMT0cxR0mnjLmi/+cDc3wH2DRb+1sogigwZFmzlgrgfmX//86JQINCSbJRCrrdq2vKXati2tOM/NSgRoZ95yUwxHsnmZliw9oQ1cEAxklEjfrJFBlZP4jiXaUA+HNAW+1NNWRnggJTRSNQAztkBveRVabD5QQ3gje824wsrmmYbe/C8KbX3SOcs2e5WPq2ohVgXfuDpDGtHw2TIOUE3Pbj99pnS4Kk4ZXK7O8HWQN/CkJLnxYID88zmq1mIFXpdRQU7NPThkv5E2XTORtED+Vf/qMM0MEa9PE+1cCDOD9eTl0MAL1TtqFvK3ASCn2K33loQQ8R2TBLln4fATGwgRwBXNzxx5j2G4wxnKtV1Je8PWVz6P0oAkTH13oN8JkDaYYR/zYYxKdsGi56hXx2nBnZtTrYloA94IBCe6jwBmzroMy1gPqkuRr/kwPni8pm0DfEkuCnMmyXcEsM+PkBTRZE7okPgsITLRb0ywTu4tcRfyvKZPsvpPNtsaY=
+  api_key: $NPM_TOKEN
   on:
     branch: master

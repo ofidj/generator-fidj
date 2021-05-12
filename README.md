@@ -24,7 +24,7 @@ yo fidj
 ```
 or as an expert :
 ```bash
-yo fidj my-app app2021 your-app-id me-as-user "my description" \
+yo fidj my-app app2021 your-app-id " " me-as-user "my description" \
    "Welcome there" \
    "Hey<br>Heres my content: <img src=blank /><br> \o/ "
 ```
