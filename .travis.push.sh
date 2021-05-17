@@ -10,7 +10,6 @@ fi
 
 setup_git() {
     echo "Setup Git."
-    # git init
     git config --global user.email "travis@travis-ci.org"
     git config --global user.name "Travis CI"
     git remote -v
@@ -25,10 +24,7 @@ setup_git() {
 }
 
 build_version() {
-    echo "Build + Docs + Bump."
-    #npm run build
-    #npm run docs
-    #npm run bump
+    echo "Bump version"
     npm version patch -m "[ci skip] travis deploy done."
 }
 
@@ -37,7 +33,8 @@ push_git() {
     git add -A .
     git commit -m "[ci skip] travis is OK: v${PACKAGE_VERSION} - ${REVISION}"
     git tag -a "v${PACKAGE_VERSION}" -m "v${PACKAGE_VERSION}"
-    git push -q upstream HEAD:master --tags
+    #git push -q upstream HEAD:master --tags  --follow-tags
+    git push --follow-tags
 }
 
 ###########

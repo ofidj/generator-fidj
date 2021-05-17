@@ -10,8 +10,6 @@ in order to check your node, cordova, ionic and yeoman installation.
 [![Fidj.ovh Status][fidj-image]][fidj-url]
 [![Build Status][travis-image]][travis-url]
 
-[![video][youtube-img]][youtube-video]
-
 ## Build it
 
 Clone and install the project
@@ -42,8 +40,6 @@ FIDJ_APP_PROD # 'true' by default, 'false' to test it on sandbox
 
 [fidj-image]: https://fidj.ovh/_/<%= appName %>/badges/github.svg
 [fidj-url]: https://fidj.ovh/_/<%= appName %>
-[youtube-img]: http://img.youtube.com/vi/0FbnCWWg_NY/0.jpg
-[youtube-video]: https://www.youtube.com/embed/0FbnCWWg_NY?autoplay=true
 [travis-image]: https://travis-ci.org/<%=appUserName %>/<%= appName %>.svg?branch=master
 [travis-url]: https://travis-ci.org/<%=appUserName %>/<%= appName %>
 
