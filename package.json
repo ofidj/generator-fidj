@@ -29,7 +29,7 @@
   },
   "repository": "https://github.com/ofidj/generator-fidj.git",
   "scripts": {
-    "test" : "echo nope"
+    "test": "echo nope"
   },
   "license": "MIT"
 }
