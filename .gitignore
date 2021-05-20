@@ -3,4 +3,5 @@ node_modules/
 coverage/
 ionic*/
 *gitignored*
+your-app/
 

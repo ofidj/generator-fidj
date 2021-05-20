@@ -1,9 +1,8 @@
-import { Component } from '@angular/core';
-
-import { Platform } from '@ionic/angular';
-import { SplashScreen } from '@ionic-native/splash-screen/ngx';
-import { StatusBar } from '@ionic-native/status-bar/ngx';
-import {FidjService, LoggerLevelEnum} from "fidj";
+import {Component} from '@angular/core';
+import {Platform} from '@ionic/angular';
+import {SplashScreen} from '@ionic-native/splash-screen/ngx';
+import {StatusBar} from '@ionic-native/status-bar/ngx';
+import {FidjService} from 'fidj';
 
 @Component({
   selector: 'app-root',

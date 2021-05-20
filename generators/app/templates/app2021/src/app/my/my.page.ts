@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
-import {Router} from "@angular/router";
+import {Router} from '@angular/router';
 import { FidjService } from 'fidj';
 
 @Component({
-  selector: 'app-tabs',
-  templateUrl: 'tabs.page.html',
-  styleUrls: ['tabs.page.scss']
+  selector: 'app-my',
+  templateUrl: 'my.page.html',
+  styleUrls: ['my.page.scss']
 })
-export class TabsPage {
+export class MyPage {
 
   constructor(
       private router: Router,

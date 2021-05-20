@@ -3,9 +3,9 @@
 [![NPM version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
 
-> build great mobile angular/ionic apps based on fidj.ovh authentication.
+> build great mobile and web angular/ionic apps based on fidj.ovh authentication.
 
-## Prerequisite
+## Prerequisites
 
 Look at mat's gist : https://gist.github.com/mlefree/2156f66dfb441f107bef157dde56a836
 
@@ -24,16 +24,18 @@ yo fidj
 ```
 or as an expert :
 ```bash
-yo fidj my-app app2021 your-app-id " " me-as-user "my description" \
+yo fidj my-app app2021 your-app-id "" me-as-user "my description" \
    "Welcome there" \
    "Hey<br>Heres my content: <img src=blank /><br> \o/ "
 ```
 
 ## Development
 
-Make sure you've got yeoman and bower installed :
+Make sure you've got yeoman installed :
 ```bash
 npm install -g yo
+npm install -g @ionic/cli
+npm install -g @angular/cli
 ```
 
 Clone the repo, install it :
@@ -42,15 +44,16 @@ cd generator-fidj
 npm install
 npm link
 ```
+
 And then use your local Fidj generator : 
 ```bash
 mkdir your-app && cd your-app && \
-   yo fidj my-app app2021 your-app-id me-as-user "my description" \
+   yo fidj my-app app2021 your-app-id "" me-as-user "my description" \
    "Welcome there" \
    "Hey<br>Heres my content: <img src=blank /><br> \o/ " 
 
 # look at the code : code .
-# test app : npm start
+# or start it : npm start
 ```
 
 ## License
