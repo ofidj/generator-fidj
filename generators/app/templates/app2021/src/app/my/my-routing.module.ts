@@ -8,23 +8,23 @@ const routes: Routes = [
     component: MyPage,
     children: [
       {
-        path: 'profile',
-        loadChildren: () => import('../profile/profile.module').then(m => m.ProfilePageModule)
-      },
-      {
         path: 'content',
         loadChildren: () => import('../content/content.module').then(m => m.ContentPageModule)
       },
       {
+        path: 'profile',
+        loadChildren: () => import('../profile/profile.module').then(m => m.ProfilePageModule)
+      },
+      {
         path: '',
-        redirectTo: '/my/profile',
+        redirectTo: '/my/content',
         pathMatch: 'full'
       }
     ]
   },
   {
     path: '',
-    redirectTo: '/my/profile',
+    redirectTo: '/my/content',
     pathMatch: 'full'
   }
 ];
