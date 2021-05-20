@@ -32,4 +32,4 @@ deploy:
     branch: master
 env:
   global:
-    - GH_REPO: "yourepo/agile-pokr"
+    - GH_REPO: "<%= appUserName %>/<%= appName %>"

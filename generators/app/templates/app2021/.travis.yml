@@ -1,35 +1,32 @@
 language:
   - node_js
 node_js:
-   - 6.11.5
+   - 14
 branches:
   only:
     - master
 install:
- - git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
- - git fetch --tags --depth=10000
+ #- git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
+ #- git fetch --tags --depth=10000
  - npm install
- - npm version patch -m "[ci skip] version bumped %s"
+ #- npm version patch -m "[ci skip] version bumped %s"
 script:
  - npm test
- - npm run build
+ - npm run build-prod
+ - echo "myapp.com" > www/CNAME
 after_success:
- - git remote add upstream "https://${GH_TOKEN}@github.com/${GH_REPO}.git"
- - git add .
- - git commit -m "[ci skip] version ok"
- - git push upstream HEAD:master
- - rm -r src
- - rm -r tests
- - rm -r coverage
- - rm -r node_modules
- - rm www/.gitignore
+ #- git remote add upstream "https://${GH_TOKEN}@github.com/${GH_REPO}.git"
+ #- git add .
+ #- git commit -m "[ci skip] version ok"
+ #- git push upstream HEAD:master
 deploy:
   provider: pages
-  skip-cleanup: true
-  github-token: $GH_TOKEN
-  keep-history: true
+  local_dir: www
+  skip_cleanup: true
+  github_token: $GH_TOKEN
+  keep_history: false
   on:
     branch: master
 env:
   global:
-    - GH_REPO: "yourepo/agile-pokr"
+    - GH_REPO: "<%= appUserName %>/<%= appName %>"
