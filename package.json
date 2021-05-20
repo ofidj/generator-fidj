@@ -1,6 +1,6 @@
 {
   "name": "generator-fidj",
-  "version": "3.3.0",
+  "version": "3.3.2",
   "description": "build great mobile angular ionic apps based on fidj.ovh authentication",
   "homepage": "https://fidj.ovh",
   "files": [
