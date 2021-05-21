@@ -1,7 +1,5 @@
 import {Component, OnInit} from '@angular/core';
 import {FidjService} from 'fidj';
-import {environment} from '../../environments/environment';
-import {Subscription} from 'rxjs';
 import {Router} from '@angular/router';
 
 @Component({
@@ -14,7 +12,6 @@ export class SigninPage implements OnInit {
     userLoginEmail: any;
     userLoginPassword: any;
     asUser: boolean;
-
     loginError: string;
 
     constructor(
@@ -25,7 +22,6 @@ export class SigninPage implements OnInit {
     }
 
     ngOnInit() {
-
         if (this.fidjService.isLoggedIn()) {
             return this.router.navigateByUrl('/my');
         } else {
@@ -34,19 +30,17 @@ export class SigninPage implements OnInit {
     }
 
     async login(email, pwd) {
-
         this.loginError = '';
         try {
             await this.fidjService.login(email, pwd);
             await this.router.navigateByUrl('/my');
         } catch (err) {
-            this.loginError = 'Bad credentials'
+            this.loginError = 'Bad credentials';
             console.error(JSON.stringify(err, Object.getOwnPropertyNames(err)));
         }
     }
 
     async loginAsDemo() {
-        // this.profile.setEmail('demo user');
         try {
             await this.fidjService.loginAsDemo();
             await this.router.navigateByUrl('/my');
@@ -57,6 +51,19 @@ export class SigninPage implements OnInit {
 
     async profileChanged(event) {
         this.asUser = !this.asUser;
+    }
+
+    async forgot(email: string) {
+        if (!email) {
+            this.loginError = 'Please set your email in order to receive the new password.';
+        }
+
+        try {
+            await this.fidjService.forgotPasswordRequest(email);
+            this.loginError = '';
+        } catch (e) {
+            console.error(e);
+        }
     }
 
 }

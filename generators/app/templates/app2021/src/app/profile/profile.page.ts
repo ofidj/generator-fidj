@@ -1,6 +1,6 @@
 import {Component} from '@angular/core';
 import {Router} from '@angular/router';
-import {EndpointInterface, FidjService} from 'fidj';
+import {Base64, FidjService} from 'fidj';
 
 @Component({
     selector: 'app-profile',
@@ -9,16 +9,7 @@ import {EndpointInterface, FidjService} from 'fidj';
 })
 export class ProfilePage {
 
-    public profileEmail: string;
-    public profileMobile: string;
-    public profileName: string;
-    public profilePassword: string;
-    public profileAppsOwned: string[];
-    public profileAppsSubscribed: string[];
-
-    public appEndpoints: EndpointInterface[] = [];
-
-    public me: any;
+    public profileUsername: string;
 
     constructor(
         private router: Router,
@@ -29,16 +20,16 @@ export class ProfilePage {
 
     async refresh(event) {
         try {
-            this.appEndpoints = await this.fidjService.getEndpoints();
-            this.me = await this.fidjService.sendOnEndpoint({verb: 'GET', key: 'me', relativePath: 'details'});
-            this.profileName = this.me.user.name;
-            this.profileEmail = this.me.user.poc.email;
-            this.profileMobile = this.me.user.poc.mobile;
-            this.profileAppsOwned = this.me.user.appsOwned ? this.me.user.appsOwned : [];
-            this.profileAppsSubscribed = this.me.user.appsSubscribed ? this.me.user.appsSubscribed : [];
+            const idToken = await this.fidjService.getIdToken();
+            const payload = idToken.split('.')[1];
+            const payloadInfo = JSON.parse(Base64.decode(payload));
+            console.log(typeof payloadInfo, payloadInfo.name);
+            this.profileUsername = payloadInfo.name;
         } catch (e) {
-            this.me = null;
+            console.warn(e);
+            this.profileUsername = null;
         }
+
         if (event) {
             event.target.complete();
         }
@@ -47,18 +38,6 @@ export class ProfilePage {
     async logout() {
         await this.fidjService.logout();
         await this.router.navigateByUrl('/');
-    }
-
-    async putChanges() {
-        const data: any = {};
-        if (this.profileName !== this.me.name) {
-            data.name = this.profileName;
-        }
-        if (this.profilePassword) {
-            data.password = this.profilePassword;
-        }
-
-        await this.fidjService.sendOnEndpoint({key: 'me', verb: 'PUT', data});
     }
 
 }
