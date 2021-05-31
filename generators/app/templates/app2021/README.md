@@ -38,8 +38,8 @@ FIDJ_APP_ID # force your fidj app Id with your sandbox's one
 FIDJ_APP_PROD # 'true' by default, 'false' to test it on sandbox
 ```
 
-[fidj-image]: https://fidj.ovh/_/<%= appName %>/badges/github.svg
-[fidj-url]: https://fidj.ovh/_/<%= appName %>
+[fidj-image]: https://api.fidj.ovh/v3/apps/<%= appId %>/badge
+[fidj-url]: https://fidj.ovh/#/pub/<%= appId %>
 [travis-image]: https://travis-ci.org/<%=appUserName %>/<%= appName %>.svg?branch=master
 [travis-url]: https://travis-ci.org/<%=appUserName %>/<%= appName %>
 
