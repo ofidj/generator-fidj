@@ -1,8 +1,14 @@
 {
-  "name": "generator-fidj",
-  "version": "3.3.6",
+  "name": "@ofidj/generator-fidj",
+  "version": "1.0.0",
   "description": "build great mobile angular ionic apps based on fidj.ovh authentication",
   "homepage": "https://fidj.ovh",
+  "bugs": {
+    "url": "https://github.com/ofidj/generator-fidj/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "generators"
   ],

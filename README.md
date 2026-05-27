@@ -1,9 +1,11 @@
-# generator-fidj
+# @ofidj/generator-fidj
 
 [![NPM version][npm-image]][npm-url]
 [![Build Status][travis-image]][travis-url]
 
 > build great mobile and web angular/ionic apps based on fidj.ovh authentication.
+>
+> _Renamed from `generator-fidj` at 1.0.0. The old `generator-fidj@3.x` is deprecated. The yeoman command becomes `yo @ofidj/fidj` (note the `@ofidj/` prefix)._
 
 ## Prerequisites
 
@@ -16,15 +18,15 @@ First, install [Yeoman](http://yeoman.io) and generator-fidj using [npm](https:/
 npm install -g yo
 npm install -g @ionic/cli
 npm install -g @angular/cli
-npm install -g generator-fidj
+npm install -g @ofidj/generator-fidj
 ```
 Then generate your new project:
 ```bash
-yo fidj
+yo @ofidj/fidj
 ```
 or as an expert :
 ```bash
-yo fidj my-app app2021 your-app-id "" me-as-user "my description" \
+yo @ofidj/fidj my-app app2021 your-app-id "" me-as-user "my description" \
    "Welcome there" \
    "Hey<br>Heres my content: <img src=blank /><br> \o/ "
 ```
@@ -48,7 +50,7 @@ npm link
 And then use your local Fidj generator : 
 ```bash
 mkdir your-app && cd your-app && \
-   yo fidj my-app app2021 your-app-id "" me-as-user "my description" \
+   yo @ofidj/fidj my-app app2021 your-app-id "" me-as-user "my description" \
    "Welcome there" \
    "Hey<br>Heres my content: <img src=blank /><br> \o/ " 
 
@@ -60,8 +62,8 @@ mkdir your-app && cd your-app && \
 
 MIT 2021 © [fidj.ovh](fidj.ovh)
 
-[npm-image]: https://badge.fury.io/js/generator-fidj.svg
-[npm-url]: https://npmjs.org/package/generator-fidj
+[npm-image]: https://badge.fury.io/js/@ofidj%2Fgenerator-fidj.svg
+[npm-url]: https://npmjs.org/package/@ofidj/generator-fidj
 [travis-image]: https://travis-ci.org/ofidj/generator-fidj.svg?branch=master
 [travis-url]: https://travis-ci.org/ofidj/generator-fidj
 [daviddm-image]: https://david-dm.org/ofidj/generator-fidj.svg?theme=shields.io
