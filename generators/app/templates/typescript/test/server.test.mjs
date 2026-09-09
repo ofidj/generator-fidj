@@ -11,7 +11,7 @@ const listen = (server) =>
   );
 const close = (server) => new Promise((resolve) => server.close(resolve));
 const token = (subject, appId = "test-app") =>
-  `header.${Buffer.from(JSON.stringify({ sub: subject, name: subject + "@test.local", aud: appId, roles: ['Owner'] })).toString("base64url")}.signature`;
+  `header.${Buffer.from(JSON.stringify({ sub: subject, name: subject + "@test.local", aud: appId, roles: ["Owner"] })).toString("base64url")}.signature`;
 
 test("enforces live app roles, identity isolation and scoped privacy over HTTP", async () => {
   const maya = token("maya");

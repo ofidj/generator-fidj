@@ -184,6 +184,8 @@ export function createApp(settings: Settings) {
         throw new HttpError(405, "Method not allowed.");
       const files: Record<string, [string, string]> = {
         "/": ["index.html", "text/html"],
+        "/app": ["app.html", "text/html"],
+        "/hero.gif": ["hero.gif", "image/gif"],
         "/main.js": ["main.js", "text/javascript"],
         "/main.css": ["main.css", "text/css"],
         "/fidj-logo.png": ["fidj-logo.png", "image/png"],

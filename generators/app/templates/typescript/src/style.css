@@ -359,3 +359,148 @@ footer {
     align-items: flex-start;
   }
 }
+
+.site-nav {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  gap: 24px;
+  font-size: 13px;
+}
+.site-nav a {
+  text-decoration: none;
+}
+.workspace-link {
+  border: 1px solid #cad8c8;
+  padding: 9px 14px;
+  border-radius: 8px;
+}
+.personal-hero {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 36px;
+  align-items: center;
+  min-height: 590px;
+}
+.mario-scene {
+  text-align: center;
+}
+.mario-scene img {
+  width: 100%;
+  max-width: 570px;
+  height: auto;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.personal-intro h1 {
+  font-size: 66px;
+  line-height: 1.08;
+  max-width: 480px;
+}
+.personal-tagline {
+  font-size: 21px;
+  color: #274b3b;
+  font-weight: 600;
+}
+.personal-intro > p {
+  max-width: 440px;
+}
+.site-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 28px 0;
+}
+.site-primary {
+  display: inline-block;
+  padding: 12px 19px;
+  border-radius: 9px;
+  background: #9d302b;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+.personal-contact {
+  font-size: 13px;
+  line-height: 2;
+}
+.resume-section {
+  scroll-margin-top: 30px;
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  gap: 70px;
+  border-top: 1px solid #dce4d9;
+  padding: 60px 0;
+}
+.resume-intro h2 {
+  font-size: 34px;
+}
+.resume-timeline article {
+  padding: 0 0 26px 24px;
+  border-left: 2px solid #d6e0d2;
+}
+.resume-timeline h3 {
+  margin: 4px 0 8px;
+}
+.resume-timeline h3 span {
+  font-weight: 400;
+}
+.resume-period {
+  font-size: 12px;
+  margin: 0;
+  color: #7e6252;
+  font-weight: 600;
+}
+.resume-timeline article > p:last-child {
+  margin-bottom: 0;
+}
+.personal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+}
+.personal-footer p {
+  margin-bottom: 0;
+}
+.site-home footer img {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  margin-right: 7px;
+}
+@media (max-width: 760px) {
+  .personal-hero {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    min-height: 0;
+  }
+  .mario-scene img {
+    max-width: 390px;
+  }
+  .personal-intro {
+    padding: 0 10px 32px;
+  }
+  .personal-intro h1 {
+    font-size: 46px;
+  }
+  .resume-section {
+    grid-template-columns: 1fr;
+    gap: 25px;
+    padding: 40px 0;
+  }
+  .site-nav {
+    gap: 12px;
+    font-size: 11px;
+  }
+  .site-home .topbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .personal-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

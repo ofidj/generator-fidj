@@ -38,3 +38,7 @@ The Ofidj launcher also generates Studio Notes on port 8200 and mleweb/Mat’s C
 ## Tests
 
 `npm test` checks scaffolding, output safety and configuration validation. Every output includes its own protected-route tests. The build uses [esbuild’s browser and Node targets](https://esbuild.github.io/getting-started/), with TypeScript checking performed separately.
+
+## Preserve a site’s identity
+
+Downstream apps may supply `public/site.json` and `public/hero.gif` before building. The generator renders a public homepage with an animated hero, CV/experience and contact links; `/app` retains the protected SDK workspace. mleweb uses its original Mario GIF and résumé. Content is escaped, external links are limited to HTTPS/mailto, and no sign-in or SDK API call is required to read the homepage.

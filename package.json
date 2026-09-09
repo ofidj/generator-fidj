@@ -22,13 +22,9 @@
     "yeoman-generator"
   ],
   "dependencies": {
-    "chalk": "^3.0.0",
-    "yeoman-generator": "^4.12.0",
-    "yosay": "^2.0.2"
+    "yeoman-generator": "^4.12.0"
   },
-  "devDependencies": {
-    "tslint": "^6.1.3"
-  },
+  "devDependencies": {},
   "eslintConfig": {
     "extends": "xo-space",
     "env": {
