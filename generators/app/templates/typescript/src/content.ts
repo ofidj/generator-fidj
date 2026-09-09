@@ -17,7 +17,7 @@ let message =
   departure === "completed"
     ? `You left ${config.title}. Your other memberships and shared identity remain.`
     : departure === "pending"
-      ? "Access was revoked. Storage cleanup is pending; contact the app owner."
+      ? "Access was revoked. Cleanup is queued; follow its progress in Fidj."
       : "";
 let failed = false;
 let busy = false;
@@ -117,6 +117,12 @@ async function action(task: () => Promise<void>) {
         error instanceof Error
           ? error.message
           : "The request could not be completed. Please retry.";
+    if (
+      /jwt expired|session revoked|session expired|token.*expired/i.test(
+        message,
+      )
+    )
+      message = "Your session has ended. Please sign in again.";
   } finally {
     busy = false;
     initialized = true;

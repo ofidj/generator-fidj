@@ -1,5 +1,7 @@
 # Changelog
 
+- Clarify expired-session and queued-cleanup messages in generated account screens.
+
 - Add signed privacy readiness checks and isolated rehearsal commands to generated apps.
 
 - Connect generated app data export/erasure, durable retry state and scoped completion receipts.
