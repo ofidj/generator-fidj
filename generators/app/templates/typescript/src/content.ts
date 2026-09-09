@@ -6,6 +6,7 @@ const sdk = new FidjNodeService();
 const root = document.querySelector<HTMLDivElement>("#app")!;
 const appPath = `/me/apps/${encodeURIComponent(config.appId)}`;
 let signedIn = false;
+let emailVerified = false;
 let anonymous = false;
 let initialized = false;
 let roles: string[] = [];
@@ -21,6 +22,16 @@ let message =
 let failed = false;
 let busy = false;
 let leaving = false;
+const accountRoutes = ["forgot", "reset", "verify", "account"];
+let linkToken = "";
+function currentRoute() {
+  const [route, query] = window.location.hash.slice(2).split("?");
+  if (["reset", "verify"].includes(route) && query) {
+    linkToken = new URLSearchParams(query).get("token") || "";
+    window.history.replaceState(null, "", "#/" + route);
+  }
+  return route;
+}
 const escape = (value: unknown) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -61,6 +72,7 @@ async function refresh() {
     request(appPath + "/consents"),
     request(appPath + "/consents/history").then((result) => result.history),
   ]);
+  emailVerified = (await request("/me")).user?.verified === true;
   signedIn = true;
 }
 async function action(task: () => Promise<void>) {
@@ -80,7 +92,29 @@ async function action(task: () => Promise<void>) {
     await task();
   } catch (error) {
     failed = true;
-    message = error instanceof Error ? error.message : String(error);
+    const detail = error as {
+      code?: number;
+      reason?: unknown;
+      message?: unknown;
+    };
+    if (detail.code === 429)
+      message = "Too many attempts. Please wait before trying again.";
+    else if (detail.message || detail.reason) {
+      let reason: any = detail.message || detail.reason;
+      try {
+        if (typeof reason === "string") reason = JSON.parse(reason);
+      } catch {}
+      message =
+        typeof reason === "string"
+          ? reason
+          : reason.message ||
+            reason.status ||
+            "The request could not be completed. Please retry.";
+    } else
+      message =
+        error instanceof Error
+          ? error.message
+          : "The request could not be completed. Please retry.";
   } finally {
     busy = false;
     initialized = true;
@@ -97,7 +131,7 @@ function moduleRoute() {
   if (
     !config.moduleEntry ||
     !route ||
-    ["signin", "content", "privacy"].includes(route)
+    ["signin", "content", "privacy", ...accountRoutes].includes(route)
   )
     return null;
   const target = new URL(config.moduleEntry, window.location.href);
@@ -115,18 +149,31 @@ function render() {
     window.location.replace(applicationRoute);
     return;
   }
-  let route = window.location.hash.slice(2);
-  if (!signedIn && !(config.allowAnonymous && anonymous)) route = "signin";
-  else if (!["signin", "content", "privacy"].includes(route)) route = "content";
+  let route = currentRoute();
+  if (
+    !signedIn &&
+    !(config.allowAnonymous && anonymous) &&
+    !["forgot", "reset", "verify"].includes(route)
+  )
+    route = "signin";
+  else if (!["signin", "content", "privacy", ...accountRoutes].includes(route))
+    route = "content";
   if (route === "privacy" && !signedIn) route = "signin";
   window.history.replaceState(null, "", "#/" + route);
+  if (accountRoutes.includes(route)) {
+    renderAccount(route);
+    return;
+  }
   if (route === "content" && config.moduleEntry) {
     root.innerHTML = '<p role="status">Opening your app…</p>';
     window.location.assign(config.moduleEntry);
     return;
   }
   if (route === "content") {
-    root.innerHTML = `<nav class="content-nav" aria-label="App navigation"><button id="content-tab" class="selected" aria-current="page">Content</button><button id="privacy-tab">${signedIn ? "My privacy" : "Sign in"}</button><button id="exit">${signedIn ? "Sign out" : "Back to sign in"}</button></nav>${element<HTMLTemplateElement>("public-content")!.innerHTML}`;
+    root.innerHTML = `<nav class="content-nav" aria-label="App navigation"><button id="content-tab" class="selected" aria-current="page">Content</button><button id="privacy-tab">${signedIn ? "My privacy" : "Sign in"}</button><button id="account-tab">My account</button><button id="exit">${signedIn ? "Sign out" : "Back to sign in"}</button></nav>${element<HTMLTemplateElement>("public-content")!.innerHTML}`;
+    element("account-tab")!.addEventListener("click", () =>
+      navigate("account"),
+    );
     element("privacy-tab")!.addEventListener("click", () =>
       navigate(signedIn ? "privacy" : "signin"),
     );
@@ -147,7 +194,7 @@ function render() {
   ${
     route === "signin"
       ? `<div class="signin-intro"><p class="eyebrow">${escape(config.title)}</p><h1>${escape(config.welcome)}</h1><p class="signin-description">${escape(config.description)}</p><div class="signin-trust"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><div><strong>Your account, with Fidj</strong><p>One identity. Your own choices for every app.</p></div></div></div>
-  <div class="signin-form"><h2>Welcome back</h2><p>Sign in to continue to ${escape(config.title)}.</p><form id="signin"><label for="email">Email address</label><input id="email" type="email" placeholder="you@example.com" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Sign in</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button></form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
+  <div class="signin-form"><h2>Welcome back</h2><p>Sign in to continue to ${escape(config.title)}.</p><form id="signin"><label for="email">Email address</label><input id="email" type="email" placeholder="you@example.com" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Sign in</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button></form><a href="#/forgot">Forgot your password?</a>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
 </div>`
       : `
   <button id="back-content">← Content</button><h2>My privacy in ${escape(config.title)}</h2><p>Roles: ${roles.map(escape).join(" · ") || "No assigned roles"}</p><button id="refresh">Refresh access</button><button id="signout">Sign out</button>
@@ -186,7 +233,7 @@ function render() {
       await sdk.login(email, password, { autoSignup: signup });
       await refresh();
       anonymous = false;
-      navigate("content");
+      navigate(signup ? "account" : "content");
     });
   });
   element("refresh")?.addEventListener("click", () => void action(refresh));
@@ -268,6 +315,75 @@ function render() {
     });
   });
 }
+
+function renderAccount(route: string) {
+  const notice = message
+    ? `<p role="${failed ? "alert" : "status"}" class="${failed ? "error" : "notice"}">${escape(message)}</p>`
+    : "";
+  const form =
+    route === "forgot"
+      ? `<h2>Reset your password</h2><p>We’ll email you a link to choose a new password for your shared Fidj account.</p><form id="recovery"><label for="recovery-email">Email address</label><input id="recovery-email" type="email" autocomplete="email" required><button class="primary">Send reset link</button></form>`
+      : route === "reset"
+        ? `<h2>Choose a new password</h2><p>This changes your Fidj password across all your apps and signs out existing sessions.</p>${linkToken ? '<form id="recovery"><label for="new-password">New password</label><input id="new-password" type="password" autocomplete="new-password" minlength="12" required><label for="confirm-password">Confirm password</label><input id="confirm-password" type="password" autocomplete="new-password" minlength="12" required><p>Use at least 12 characters (up to 72 UTF-8 bytes).</p><button class="primary">Save new password</button></form>' : '<p>Request a new link if you no longer have an active reset link.</p><a href="#/forgot">Request a reset link</a>'}`
+        : route === "verify"
+          ? `<h2>Verify your email</h2><p>Confirm that this email address belongs to you.</p>${linkToken ? '<form id="recovery"><button class="primary">Confirm email address</button></form>' : "<p>Sign in to your account to request a new verification email.</p>"}`
+          : `<h2>My Fidj account</h2><p>Your identity is shared across your apps. Privacy choices remain separate for each app.</p><p id="verification-status">${emailVerified ? "Your email address is verified." : "Your email is not verified yet."}</p><button id="check-verification">Refresh verification status</button>${emailVerified ? "" : '<button id="resend-verification">Send verification email</button>'}<p><a href="#/forgot">Reset my password</a></p><button id="continue-app" class="primary">Continue to ${escape(config.title)}</button>`;
+  root.innerHTML = `<section class="signin-shell"><div class="signin-intro"><p class="eyebrow">${escape(config.title)}</p><h1>Your account.<br>Your control.</h1><p class="signin-description">Secure access to the apps you use, with one Fidj identity.</p><div class="signin-trust"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><p>You choose what you share.</p></div></div><div class="signin-form">${notice}${form}<p><a href="#/signin">Back to sign in</a></p></div></section>`;
+  element("continue-app")?.addEventListener("click", () => navigate("content"));
+  element("check-verification")?.addEventListener(
+    "click",
+    () =>
+      void action(async () => {
+        const result = await request("/me");
+        emailVerified = result.user?.verified === true;
+        message = emailVerified
+          ? "Your email address is verified."
+          : "Your email is not verified yet. Request a verification email below.";
+      }),
+  );
+  element("resend-verification")?.addEventListener(
+    "click",
+    () =>
+      void action(async () => {
+        await sdk.resendVerification();
+        message =
+          "Verification email sent. Open the link and confirm your address. If it does not arrive, check your spam folder.";
+      }),
+  );
+  element<HTMLFormElement>("recovery")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const email = element<HTMLInputElement>("recovery-email")?.value || "";
+    const password = element<HTMLInputElement>("new-password")?.value || "";
+    const confirmation =
+      element<HTMLInputElement>("confirm-password")?.value || "";
+    void action(async () => {
+      if (route === "forgot") {
+        await sdk.fidjForgotPasswordRequest(email);
+        message =
+          "If an account matches that email, a reset link is on its way. Check your inbox and spam folder.";
+      } else if (route === "reset") {
+        if (password !== confirmation)
+          throw new Error("The passwords do not match.");
+        if (new TextEncoder().encode(password).length > 72)
+          throw new Error(
+            "Use a shorter password: the limit is 72 UTF-8 bytes.",
+          );
+        await sdk.resetPassword({ token: linkToken, password });
+        linkToken = "";
+        signedIn = false;
+        anonymous = false;
+        message =
+          "Your password has been changed. Sign in with your new password.";
+        navigate("signin");
+      } else {
+        await sdk.verifyEmail({ token: linkToken });
+        linkToken = "";
+        message =
+          "Your email address is now verified. You can return to your app.";
+      }
+    });
+  });
+}
 window.addEventListener("hashchange", render);
 render();
 void action(async () => {
@@ -277,6 +393,7 @@ void action(async () => {
   });
   if (sdk.isLoggedIn()) {
     await refresh();
-    if (!moduleRoute()) navigate("content");
+    if (!moduleRoute() && !accountRoutes.includes(currentRoute()))
+      navigate("content");
   }
 });

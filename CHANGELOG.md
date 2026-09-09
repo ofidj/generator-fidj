@@ -1,5 +1,7 @@
 # Changelog
 
+- Add shared-account password recovery and email verification integration.
+
 ## 1.0.1 — Unreleased
 
 - Compose built application modules behind the shared SDK sign-in with `--module` and `--module-entry`; preserve module source, validate public assets and serve an explicit asset manifest.

@@ -60,3 +60,7 @@ Hash routes other than the generated entry/content/privacy views are forwarded t
 The module entry receives a `meta[name="fidj-signin"]` URL, relative to its base URL. A module can send its sign-in, logout or expired-session flow there. Fidj's console implements this handoff and preserves departure status. The generated preview serves module assets from an explicit build manifest, including directory index URLs.
 
 `fidj-app` now exercises this path with `npm run create:local`: its owner/profile/privacy features remain an explicit Angular console module, while the generator owns the shared entry and final assembly. The local launcher serves the generated Fidj output on port 4200. The source console is maintained outside disposable `.gen` and must be rebuilt before regenerating.
+
+## Generated account lifecycle
+
+Content and module entries include `#/forgot`, `#/reset`, `#/verify`, and authenticated `#/account` screens in the same split layout as sign-in. These routes remain in the generated shell when an application module is attached. Forgot-password responses are neutral; verification requires an explicit click. `My account` provides verification status and resend. Password reset affects the shared Fidj identity across apps. Configure the API’s trusted account UI URL for email links; the current generated API integration requires the coordinated 3.6.24 SDK/API. The server-backed Notes template remains a separate integration example.
