@@ -1,5 +1,7 @@
 # Changelog
 
+- Connect generated app data export/erasure, durable retry state and scoped completion receipts.
+
 - Add shared-account password recovery and email verification integration.
 
 ## 1.0.1 — Unreleased

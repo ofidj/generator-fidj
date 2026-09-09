@@ -16,9 +16,9 @@ Serve `www/` on a static host. It contains your public content, SDK sign-in/acco
 
 ## Backend example — protected actions
 
-Omit `--content` to generate Studio Notes: a browser client plus Node backend with private in-memory notes. The backend revalidates the session and live app roles for every protected request. Owner/Editor may write; other members may read their own notes. This mode requires Node hosting and is separate from the static content app scenario.
+Omit `--content` to generate Studio Notes: a browser client plus Node backend with private persisted notes. The backend revalidates the session and live app roles for every protected request. Owner/Editor may write; other members may read their own notes. This mode requires Node hosting and is separate from the static content app scenario.
 
-A departure through Studio Notes erases its notes and requests scoped Fidj departure. Departure directly through the Fidj dashboard revokes access but does not yet notify that independent note store. Durable storage/deletion adapters, groups and OIDC remain later milestones.
+Configure the generated privacy adapter so departure from either Studio Notes or Fidj erases the same app data. Notes persist outside disposable output. Failed cleanup stays pending in Fidj and can be retried; completed receipts remain visible. See the generated README for server-side configuration and persistence limits.
 
 ## CLI and local development
 
@@ -64,3 +64,9 @@ The module entry receives a `meta[name="fidj-signin"]` URL, relative to its base
 ## Generated account lifecycle
 
 Content and module entries include `#/forgot`, `#/reset`, `#/verify`, and authenticated `#/account` screens in the same split layout as sign-in. These routes remain in the generated shell when an application module is attached. Forgot-password responses are neutral; verification requires an explicit click. `My account` provides verification status and resend. Password reset affects the shared Fidj identity across apps. Configure the API’s trusted account UI URL for email links; the current generated API integration requires the coordinated 3.6.24 SDK/API. The server-backed Notes template remains a separate integration example.
+
+## App data adapter
+
+The Notes server exposes `POST /fidj/privacy` for HMAC-authenticated, timestamped export/erase operations. Set a private `FIDJ_PRIVACY_ADAPTER_KEY` and register the same app ID, endpoint and key in the API’s server-side `FIDJ_PRIVACY_ADAPTERS`. Static content apps need no independent data adapter. `FIDJ_DATA_DIR` must stay outside `www`, `dist` and disposable generated output; the generated environment defaults to a sibling data directory.
+
+The file adapter uses atomic writes and a serialized queue for one writer process. Replace it with a transactional database for multi-instance hosting. Erasure receipts retain a hashed subject for replay protection, pruned after 30 days on the next write. Backups and unregistered stores are not covered. Tests exercise live authorization, restart persistence, private exports, adapter authentication, failed cleanup and duplicate-request safety.
