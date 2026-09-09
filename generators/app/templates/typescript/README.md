@@ -45,4 +45,6 @@ Only when using the loopback API, set `LOCAL_DEMO=true` to show synthetic Alex/M
 
 ## Entry flow
 
-The generated content app opens on `/#/signin`. Sign in or choose **Enter anonymously** to open `/#/content`, containing the supplied HTML. Signed-in users can open **My privacy** separately. Sign-out and departure return to the sign-in screen. Anonymous content is public; this navigation flow is not a security boundary for static assets.
+The generated content app opens on `/#/signin`. Sign in, or choose **Enter anonymously** when enabled by `--anonymous true`, to open `/#/content`, containing the supplied HTML. Signed-in users can open **My privacy** separately. Sign-out and departure return to the sign-in screen. Anonymous content is public; this navigation flow is not a security boundary for static assets.
+
+Set `--anonymous false` in the generator command to remove anonymous entry and route unsigned visitors back to sign-in. This controls navigation; static HTML/assets remain public. Put confidential content behind a server-authorized endpoint.

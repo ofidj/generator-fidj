@@ -2,6 +2,8 @@
 
 ## 1.0.1 — Unreleased
 
+- Configure anonymous entry with `--anonymous true|false`; mleweb explicitly disables it.
+
 - Restore the login-first flow: sign-in or explicit anonymous entry opens Content, with privacy in a separate view.
 
 - Make the TypeScript client/Node backend template the maintained default through CLI and Yeoman.

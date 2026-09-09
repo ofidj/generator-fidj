@@ -11,6 +11,7 @@ try {
       title: { type: "string" },
       welcome: { type: "string" },
       content: { type: "string" },
+      anonymous: { type: "string" },
       domain: { type: "string" },
       local: { type: "boolean" },
       replace: { type: "boolean" },
@@ -19,7 +20,7 @@ try {
   });
   if (values.help || positionals.length !== 1) {
     console.log(
-      "Usage: create-fidj <directory> --app-id <fidjId> [--api-endpoint <url>] [--title <text> --welcome <text> --content <html> --domain <hostname>] [--local] [--replace]",
+      "Usage: create-fidj <directory> --app-id <fidjId> [--api-endpoint <url>] [--title <text> --welcome <text> --content <html> --domain <hostname>] [--anonymous true|false] [--local] [--replace]",
     );
     process.exitCode = values.help ? 0 : 1;
   } else {
@@ -30,6 +31,7 @@ try {
       title: values.title,
       welcome: values.welcome,
       content: values.content,
+      anonymous: values.anonymous,
       domain: values.domain,
       local: values.local || process.env.FIDJ_LOCAL === "true",
       replace: values.replace,

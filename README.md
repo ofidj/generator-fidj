@@ -24,6 +24,7 @@ A departure through Studio Notes erases its notes and requests scoped Fidj depar
 
 The package exposes `create-fidj`; from its checkout use `node bin/create-fidj.cjs`. Yeoman `yo @ofidj/fidj my-app --app-id YOUR_FIDJ_ID` invokes the same scaffolder and accepts the content/title/welcome/domain options. The old `app2021` positional command is a historical reference, not the maintained interface.
 
+- `--anonymous true|false`: show or hide anonymous entry in content apps (default: `true`). Set `--anonymous false` for a sign-in-only entry flow, as mleweb does.
 - `--api-endpoint`: select the API (default: hosted sandbox).
 - `--sdk-path` or `FIDJ_SDK_DIR`: use a built local SDK during coordinated development.
 - `--local` or `FIDJ_LOCAL=true`: use the loopback API/console. Test credentials stay in the validation guide, outside the content app UI. Supply the matching local app ID; `FIDJ_APP_ID` can override it.
@@ -41,4 +42,4 @@ Run `npm test` for scaffolding/CLI safety tests. Generated projects include Type
 
 ## Entry flow
 
-The generated content app opens on `/#/signin`. Sign in or choose **Enter anonymously** to open `/#/content`, containing the supplied HTML. Signed-in users can open **My privacy** separately. Sign-out and departure return to the sign-in screen. Anonymous content is public; this navigation flow is not a security boundary for static assets.
+The generated content app opens on `/#/signin`. Sign in, or choose **Enter anonymously** when enabled, to open `/#/content`, containing the supplied HTML. Signed-in users can open **My privacy** separately. Sign-out and departure return to the sign-in screen. Anonymous content is public; this navigation flow is not a security boundary for static assets.

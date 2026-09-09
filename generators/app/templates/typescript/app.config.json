@@ -3,5 +3,6 @@
   "apiEndpoint": "https://api.sandbox.fidj.ovh/v3",
   "dashboardUrl": "https://fidj.ovh",
   "title": "My app",
-  "localDemo": false
+  "localDemo": false,
+  "allowAnonymous": true
 }
