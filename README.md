@@ -55,6 +55,8 @@ cd my-app && npm install && npm run build-prod
 
 The result is one static website: the generated SDK sign-in entry and the module under `www/module/`. After login, the entry opens the module on the same origin. The module must use the same public app ID/API and independently validate authorization for its own operations. The generator copies public build assets without changing their source; module input cannot contain environment files, dependency directories or symlinks.
 
+Hash routes other than the generated entry/content/privacy views are forwarded to the module, preserving existing public cards and console links. The module remains responsible for guarding private routes.
+
 The module entry receives a `meta[name="fidj-signin"]` URL, relative to its base URL. A module can send its sign-in, logout or expired-session flow there. Fidj's console implements this handoff and preserves departure status. The generated preview serves module assets from an explicit build manifest, including directory index URLs.
 
 `fidj-app` now exercises this path with `npm run create:local`: its owner/profile/privacy features remain an explicit Angular console module, while the generator owns the shared entry and final assembly. The local launcher serves the generated Fidj output on port 4200. The source console is maintained outside disposable `.gen` and must be rebuilt before regenerating.

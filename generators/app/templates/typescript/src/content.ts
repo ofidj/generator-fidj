@@ -92,9 +92,27 @@ function navigate(route: string) {
   window.history.replaceState(null, "", "#/" + route);
   if (!busy) render();
 }
+function moduleRoute() {
+  const route = window.location.hash.slice(2).split("?")[0];
+  if (
+    !config.moduleEntry ||
+    !route ||
+    ["signin", "content", "privacy"].includes(route)
+  )
+    return null;
+  const target = new URL(config.moduleEntry, window.location.href);
+  target.hash = window.location.hash;
+  return target.href;
+}
 function render() {
   if (!initialized) {
     root.innerHTML = '<p role="status">Loading your session…</p>';
+    return;
+  }
+  const applicationRoute = moduleRoute();
+  if (applicationRoute) {
+    root.innerHTML = '<p role="status">Opening your app…</p>';
+    window.location.replace(applicationRoute);
     return;
   }
   let route = window.location.hash.slice(2);
@@ -259,6 +277,6 @@ void action(async () => {
   });
   if (sdk.isLoggedIn()) {
     await refresh();
-    navigate("content");
+    if (!moduleRoute()) navigate("content");
   }
 });

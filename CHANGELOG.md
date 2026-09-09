@@ -3,6 +3,7 @@
 ## 1.0.1 — Unreleased
 
 - Compose built application modules behind the shared SDK sign-in with `--module` and `--module-entry`; preserve module source, validate public assets and serve an explicit asset manifest.
+- Preserve module-owned hash routes, including public app cards, through the generated entry.
 - Add a builder description input and correct hash links to the Fidj dashboard.
 
 - Configure anonymous entry with `--anonymous true|false`; mleweb explicitly disables it.
