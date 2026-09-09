@@ -79,6 +79,10 @@ export class DataStore {
     this.queue = operation.catch(() => {});
     return operation;
   }
+  async check() {
+    await this.transact(() => undefined);
+    return {storage: "ready", capabilities: ["export", "erase"]};
+  }
   async notes(subject: string): Promise<Note[]> {
     await this.queue;
     return (await this.state()).notes[this.key(subject)] || [];

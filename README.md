@@ -70,3 +70,10 @@ Content and module entries include `#/forgot`, `#/reset`, `#/verify`, and authen
 The Notes server exposes `POST /fidj/privacy` for HMAC-authenticated, timestamped export/erase operations. Set a private `FIDJ_PRIVACY_ADAPTER_KEY` and register the same app ID, endpoint and key in the API’s server-side `FIDJ_PRIVACY_ADAPTERS`. Static content apps need no independent data adapter. `FIDJ_DATA_DIR` must stay outside `www`, `dist` and disposable generated output; the generated environment defaults to a sibling data directory.
 
 The file adapter uses atomic writes and a serialized queue for one writer process. Replace it with a transactional database for multi-instance hosting. Erasure receipts retain a hashed subject for replay protection, pruned after 30 days on the next write. Backups and unregistered stores are not covered. Tests exercise live authorization, restart persistence, private exports, adapter authentication, failed cleanup and duplicate-request safety.
+
+
+### Check a registered data handler
+
+Generated starters include `npm run privacy:check`: configure the server-only `FIDJ_PRIVACY_ADAPTER_KEY` in `.env`, start the app, then run the command. It signs a readiness request, verifies capabilities and probes durable storage without exporting or deleting user records. `FIDJ_APP_URL` can override the default loopback URL. `npm run privacy:rehearse` builds and exercises an isolated temporary data store, including scoped export, failure, retry and persistence. Production app data and credentials are never inputs to that rehearsal.
+
+Readiness confirms this handler only. Register its trusted URL and independent secret with the Fidj API operator; the app owner console can then check the same connection. Group roles granted in Fidj are enforced by the generated backend on each protected operation.

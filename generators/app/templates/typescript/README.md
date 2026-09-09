@@ -35,7 +35,7 @@ Run `npm test` before changing the template. Every fresh generated app includes 
 
 Optional preferences and their history belong to this app. In the static content app, export covers the Fidj-held membership records and no independent app database exists. In Studio Notes, export includes the Fidj membership and the starter’s notes. Leaving through this app removes its Fidj membership and locally held notes. App owners must resolve ownership first.
 
-Notes persist in `FIDJ_DATA_DIR`. With the adapter registered below, direct export/departure from Fidj includes these notes. Failed erasure keeps a request in Fidj for explicit retry. Account-wide identity deletion, background retries, real terms/purposes and a full production retention policy remain separate integration work. The demo agreement is explicitly a placeholder, not a legal policy.
+Notes persist in `FIDJ_DATA_DIR`. With the adapter registered below, direct export/departure from Fidj includes these notes. Failed erasure keeps a request in Fidj for automatic retry with backoff; people can also retry explicitly. The API pauses after eight failed automatic attempts and exposes a needs-attention state. Account-wide identity deletion, real terms/purposes and a full production retention policy remain separate integration work. The demo agreement is explicitly a placeholder, not a legal policy.
 
 The browser SDK stores the app’s session in this origin’s local storage. Use HTTPS and maintain a strict content security policy when hosting. The backend delegates signature and session-revocation validation to the configured Fidj API and fails closed when it cannot verify a session.
 
@@ -64,3 +64,10 @@ Set `FIDJ_PRIVACY_ADAPTER_KEY` to a private random secret of at least 32 charact
 Set that JSON as `FIDJ_PRIVACY_ADAPTERS` on the API. Endpoint registration is operator-managed in this milestone. HTTPS is required; explicit local mode also permits loopback HTTP. The local workspace launcher configures Studio Notes automatically. Requests contain `appId`, `subject`, `operation` and `requestId`; headers contain a millisecond timestamp and SHA-256 HMAC of `timestamp + "." + JSON.stringify(body)`. Requests older than five minutes are rejected; redirects are not followed. The handler must return the matching `requestId` and `status: "completed"` only after durable success.
 
 Keep `FIDJ_DATA_DIR` outside public assets and generated output. Use one writer process per directory. Replace `server/data-store.ts` with a transactional database implementation for multiple instances. Do not weaken the authorization check inside note writes or the atomic erase/receipt transaction. Duplicate erasures preserve later membership data. Minimal receipts contain a hashed subject and completion timestamp; receipts older than 30 days are pruned on the next write. Backups and unregistered external data remain outside this handler’s scope.
+
+
+## Check and rehearse
+
+After starting the Notes backend with its server-only adapter secret, run `npm run privacy:check`. The signed check confirms export/erase capabilities and writable storage without accessing user records. Override `FIDJ_APP_URL` for a deployed HTTPS backend. Keep this secret out of browser configuration.
+
+Run `npm run privacy:rehearse` for an isolated temporary-store HTTP scenario covering live roles, scoped export, persistence, failure and idempotent erasure. It never points at your running data directory. Groups are managed in the Fidj owner console; direct and group roles are checked live by the backend.

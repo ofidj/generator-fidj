@@ -1,3 +1,5 @@
+import {execFile} from "node:child_process";
+import {promisify} from "node:util";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
@@ -189,6 +191,12 @@ test("enforces live app roles, identity isolation and scoped privacy over HTTP",
       1,
     );
     assert.equal((await fetch(url + "/.fidj-data/data.json")).status, 404);
+    const readiness = await (await adapterCall("check", "readiness-check", "check-test")).json();
+    assert.equal(readiness.storage, "ready");
+    assert.deepEqual(readiness.capabilities, ["export", "erase"]);
+    const checked = await promisify(execFile)(process.execPath, ["scripts/privacy-check.mjs"], {env: {...process.env, FIDJ_APP_ID: "test-app", FIDJ_APP_URL: url, FIDJ_PRIVACY_ADAPTER_KEY: adapterKey}});
+    assert.match(checked.stdout, /Ready:/);
+    await assert.rejects(promisify(execFile)(process.execPath, ["scripts/privacy-check.mjs"], {env: {...process.env, FIDJ_APP_ID: "test-app", FIDJ_APP_URL: url, FIDJ_PRIVACY_ADAPTER_KEY: "wrong-key-that-is-long-enough-for-check"}}));
     assert.equal(
       (await (await fetch(url + "/api/config")).json()).adapterKey,
       undefined,

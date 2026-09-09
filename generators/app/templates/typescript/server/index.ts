@@ -109,6 +109,7 @@ export function createApp(
           !/^[a-zA-Z0-9-]{1,100}$/.test(input.requestId)
         )
           throw new HttpError(400, "Invalid privacy scope.");
+        if (input.operation === "check") return json(res, 200, {requestId: input.requestId, status: "completed", ...await store.check()});
         if (input.operation === "export")
           return json(res, 200, {
             requestId: input.requestId,
