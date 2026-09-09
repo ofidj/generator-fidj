@@ -24,9 +24,11 @@ let busy = false;
 let leaving = false;
 const accountRoutes = ["forgot", "reset", "verify", "account"];
 let linkToken = "";
+let verificationConfirmed = false;
 function currentRoute() {
   const [route, query] = window.location.hash.slice(2).split("?");
   if (["reset", "verify"].includes(route) && query) {
+    verificationConfirmed = false;
     linkToken = new URLSearchParams(query).get("token") || "";
     window.history.replaceState(null, "", "#/" + route);
   }
@@ -326,7 +328,7 @@ function renderAccount(route: string) {
       : route === "reset"
         ? `<h2>Choose a new password</h2><p>This changes your Fidj password across all your apps and signs out existing sessions.</p>${linkToken ? '<form id="recovery"><label for="new-password">New password</label><input id="new-password" type="password" autocomplete="new-password" minlength="12" required><label for="confirm-password">Confirm password</label><input id="confirm-password" type="password" autocomplete="new-password" minlength="12" required><p>Use at least 12 characters (up to 72 UTF-8 bytes).</p><button class="primary">Save new password</button></form>' : '<p>Request a new link if you no longer have an active reset link.</p><a href="#/forgot">Request a reset link</a>'}`
         : route === "verify"
-          ? `<h2>Verify your email</h2><p>Confirm that this email address belongs to you.</p>${linkToken ? '<form id="recovery"><button class="primary">Confirm email address</button></form>' : "<p>Sign in to your account to request a new verification email.</p>"}`
+          ? `<h2>${verificationConfirmed ? "Email verified" : "Verify your email"}</h2>${verificationConfirmed ? "<p>Your account is ready. Return to your app to continue.</p>" : "<p>Confirm that this email address belongs to you.</p>"}${verificationConfirmed ? "" : linkToken ? '<form id="recovery"><button class="primary">Confirm email address</button></form>' : "<p>Sign in to your account to request a new verification email.</p>"}`
           : `<h2>My Fidj account</h2><p>Your identity is shared across your apps. Privacy choices remain separate for each app.</p><p id="verification-status">${emailVerified ? "Your email address is verified." : "Your email is not verified yet."}</p><button id="check-verification">Refresh verification status</button>${emailVerified ? "" : '<button id="resend-verification">Send verification email</button>'}<p><a href="#/forgot">Reset my password</a></p><button id="continue-app" class="primary">Continue to ${escape(config.title)}</button>`;
   root.innerHTML = `<section class="signin-shell"><div class="signin-intro"><p class="eyebrow">${escape(config.title)}</p><h1>Your account.<br>Your control.</h1><p class="signin-description">Secure access to the apps you use, with one Fidj identity.</p><div class="signin-trust"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><p>You choose what you share.</p></div></div><div class="signin-form">${notice}${form}<p><a href="#/signin">Back to sign in</a></p></div></section>`;
   element("continue-app")?.addEventListener("click", () => navigate("content"));
@@ -377,6 +379,7 @@ function renderAccount(route: string) {
         navigate("signin");
       } else {
         await sdk.verifyEmail({ token: linkToken });
+        verificationConfirmed = true;
         linkToken = "";
         message =
           "Your email address is now verified. You can return to your app.";
