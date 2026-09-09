@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, readdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHmac } from "node:crypto";
@@ -220,12 +220,20 @@ test("enforces live app roles, identity isolation and scoped privacy over HTTP",
     assert.equal((await adapterCall("erase", "maya")).status, 500);
     assert.equal((await (await call("notes")).json()).notes.length, 1);
     storageUnavailable = false;
+    await writeFile(
+      join(directory, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa.tmp"),
+      "Interrupted private data copy",
+    );
     assert.equal(
       (await call("privacy/leave", maya, "DELETE", { confirm: "test-app" }))
         .status,
       200,
     );
     assert.equal((await call("notes")).status, 401);
+    assert.equal(
+      (await readdir(directory)).filter((name) => name.endsWith(".tmp")).length,
+      0,
+    );
     assignments.set(maya, ["Free"]);
     assert.equal((await (await call("notes")).json()).notes.length, 0);
     assert.equal((await call("session", sam)).status, 200);

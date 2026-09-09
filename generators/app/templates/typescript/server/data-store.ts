@@ -1,4 +1,11 @@
-import { mkdir, readFile, open, rename } from "node:fs/promises";
+import {
+  mkdir,
+  readFile,
+  open,
+  rename,
+  readdir,
+  unlink,
+} from "node:fs/promises";
 import { join } from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 
@@ -33,6 +40,12 @@ export class DataStore {
   }
   private transact<T>(task: (state: State) => T | Promise<T>): Promise<T> {
     const operation = this.queue.then(async () => {
+      await mkdir(this.directory, { recursive: true, mode: 0o700 });
+      // Interrupted writes must not leave a second copy of erased data behind.
+      for (const name of await readdir(this.directory)) {
+        if (/^[a-f0-9-]{36}\.tmp$/.test(name))
+          await unlink(join(this.directory, name));
+      }
       const state = await this.state();
       for (const [id, receipt] of Object.entries(state.receipts)) {
         if (Date.parse(receipt.completedAt) < Date.now() - 30 * 86400000)
@@ -41,14 +54,20 @@ export class DataStore {
       const result = await task(state);
       await mkdir(this.directory, { recursive: true, mode: 0o700 });
       const temporary = join(this.directory, randomUUID() + ".tmp");
-      const file = await open(temporary, "wx", 0o600);
       try {
-        await file.writeFile(JSON.stringify(state));
-        await file.sync();
+        const file = await open(temporary, "wx", 0o600);
+        try {
+          await file.writeFile(JSON.stringify(state));
+          await file.sync();
+        } finally {
+          await file.close();
+        }
+        await rename(temporary, join(this.directory, "data.json"));
       } finally {
-        await file.close();
+        await unlink(temporary).catch((error) => {
+          if (error.code !== "ENOENT") throw error;
+        });
       }
-      await rename(temporary, join(this.directory, "data.json"));
       const directory = await open(this.directory, "r");
       try {
         await directory.sync();
