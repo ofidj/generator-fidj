@@ -198,7 +198,7 @@ export function createApp(settings: Settings) {
         "Content-Type": file[1],
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "no-referrer",
-        "Content-Security-Policy": `default-src 'self'; connect-src 'self' ${apiOrigin}; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`,
+        "Content-Security-Policy": `default-src 'self'; img-src 'self' https:; connect-src 'self' ${apiOrigin}; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`,
       });
       res.end(req.method === "HEAD" ? undefined : content);
     } catch (error) {

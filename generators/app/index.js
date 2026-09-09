@@ -6,6 +6,8 @@ module.exports = class extends Generator {
     super(args, opts);
     this.argument("appname", { type: String, required: false });
     this.option("app-id", { type: String });
+    for (const key of ["title", "welcome", "content", "domain", "sdk-path"])
+      this.option(key, { type: String });
     this.option("api-endpoint", {
       type: String,
       default: "https://api.sandbox.fidj.ovh/v3",
@@ -38,6 +40,11 @@ module.exports = class extends Generator {
     const name = this.options.appname || this.answers.name;
     scaffold(this.destinationPath(name), {
       name,
+      title: this.options.title,
+      welcome: this.options.welcome,
+      content: this.options.content,
+      domain: this.options.domain,
+      sdkPath: this.options["sdk-path"],
       appId: this.options["app-id"] || this.answers.appId,
       apiEndpoint: this.options["api-endpoint"],
     });

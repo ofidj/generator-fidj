@@ -47,3 +47,48 @@ test("rejects injected app IDs and insecure remote endpoint configuration", () =
     /credentials/,
   );
 });
+
+test("public CLI accepts content inputs and only replaces marked generated output", () => {
+  const { spawnSync } = require("node:child_process");
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "fidj-cli-"));
+  const output = path.join(root, "cloud-app");
+  const cli = path.resolve(__dirname, "../bin/create-fidj.cjs");
+  const args = [
+    cli,
+    output,
+    "--app-id",
+    "fidj-cloud",
+    "--title",
+    "Mat Cloud App",
+    "--welcome",
+    "Welcome in my Cloud",
+    "--content",
+    "<img src=https://example.org/mario.gif><a href='https://example.org/about'>About me</a>",
+    "--domain",
+    "mlefree.com",
+  ];
+  try {
+    let result = spawnSync(process.execPath, args, { encoding: "utf8" });
+    assert.equal(result.status, 0, result.stderr);
+    const config = JSON.parse(
+      fs.readFileSync(path.join(output, "app.config.json")),
+    );
+    assert.equal(config.title, "Mat Cloud App");
+    assert.equal(config.welcome, "Welcome in my Cloud");
+    assert.match(config.content, /mario.gif/);
+    assert.equal(config.domain, "mlefree.com");
+    result = spawnSync(process.execPath, [...args, "--replace"], {
+      encoding: "utf8",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    fs.unlinkSync(path.join(output, ".fidj-generated"));
+    result = spawnSync(process.execPath, [...args, "--replace"], {
+      encoding: "utf8",
+    });
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /marker/);
+    assert.ok(fs.existsSync(path.join(output, "app.config.json")));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

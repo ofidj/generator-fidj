@@ -1,6 +1,11 @@
 # Your Fidj TypeScript app
 
-A generated browser client and Node server: sign in on your app’s own origin, save private notes with an Owner or Editor role, and control privacy independently of other apps.
+A generated TypeScript client with Fidj sign-in and app-scoped privacy. The generator selects the mode from its inputs:
+
+- With `--content`: public HTML plus account/privacy controls, built to static `www/` assets and optional `CNAME`. No app backend is required; the client calls Fidj directly.
+- Without `--content`: Studio Notes, with a Node backend enforcing live Owner/Editor roles for private notes.
+
+The public title, welcome, HTML content and endpoints are in `app.config.json`. Edit the original generator command and regenerate for repeatable changes. Content HTML is trusted developer source.
 
 ## Run
 
@@ -12,12 +17,13 @@ npm run build
 npm start
 ```
 
-Open http://localhost:8200. The backend must run for protected operations; this is not a static-only GitHub Pages build. Configure Fidj’s allowed origins for your app domain. No app signing key belongs in the browser or this starter’s public configuration.
+Open http://localhost:8200. For content apps, `npm run build-prod` produces static `www/` assets; the Node process is only an optional preview. For Studio Notes, the backend must run for protected operations. Configure Fidj’s allowed origins for your app domain. No app signing key belongs in the browser or this starter’s public configuration.
 
 The current unreleased generator requires the matching `@ofidj/node` 3.6.24 SDK. Until publication, generate with `--sdk-path /absolute/path/to/fidj-node/dist` after building that SDK. Local file dependencies belong only in generated development output; use registry dependencies for release.
 
 ## Structure
 
+- `src/content.ts`: static content app account, live roles and privacy controls.
 - `src/main.ts`: `FidjNodeService.init`, login, browser session and views.
 - `server/index.ts`: `verifyAppSession` on every protected request; live roles decide whether a note can be saved. Changing a role takes effect on the next backend request, even if a browser still displays old roles.
 - `test/server.test.mjs`: fresh HTTP servers verify role changes, revoked/foreign sessions, outage failure, per-user notes and privacy scope.
@@ -27,7 +33,7 @@ Run `npm test` before changing the template. Every fresh generated app includes 
 
 ## Privacy scope
 
-Optional preferences and their history belong to this app. Export includes the Fidj membership and the starter’s notes. Leaving through this app removes its Fidj membership and locally held notes. App owners must resolve ownership first.
+Optional preferences and their history belong to this app. In the static content app, export covers the Fidj-held membership records and no independent app database exists. In Studio Notes, export includes the Fidj membership and the starter’s notes. Leaving through this app removes its Fidj membership and locally held notes. App owners must resolve ownership first.
 
 Notes are in memory and reset on server restart; replace this store before operating a real product. Direct departure from the Fidj dashboard revokes access but does not erase this starter’s independent notes. A registered deletion adapter, durable jobs/retries, account-wide identity deletion, real terms/purposes and a production retention policy are later integration work. The demo agreement is explicitly a placeholder, not a legal policy.
 

@@ -1,44 +1,40 @@
 # @ofidj/generator-fidj
 
-Generate a TypeScript browser app and Node backend with Fidj sign-in, live role checks and per-app privacy. The maintained default replaces the old app2021 Angular/Ionic template. Legacy templates remain for reference and are no longer the default generation path.
+Generate a Fidj-integrated TypeScript app with a short command. Public identity and content are generator inputs; authentication and per-app privacy are reusable template behavior. Node 22 or 24 is the validation matrix.
 
-## Generate locally
-
-Node 22 or later is required. Create an app in Fidj to obtain its public `fidjId`. No private signing key is embedded in generated browser code.
+## Content app — static hosting
 
 ```sh
-node bin/create-fidj.cjs my-app --app-id YOUR_FIDJ_ID --api-endpoint https://api.sandbox.fidj.ovh/v3
+create-fidj my-app --app-id YOUR_FIDJ_ID --title "My App" --welcome "Welcome" --content "<p>About my app</p>" --domain example.com
 cd my-app
-cp .env.example .env
-npm install
-npm test
-npm start
+npm install && npm run build-prod
 ```
 
-The package also exposes `create-fidj`; the Yeoman entry point `yo @ofidj/fidj my-app --app-id YOUR_FIDJ_ID` generates the same template. Existing non-empty destinations are never overwritten.
+Serve `www/` on a static host. It contains your public content, SDK sign-in/account creation, current roles, consent/history, scoped export and confirmed departure, plus `CNAME`. Private signing keys are never needed in the browser. `npm start` supplies an optional Node preview; this mode makes its API calls directly to Fidj.
 
-During this unreleased cross-repo milestone, first build `../fidj-node`, then pass `--sdk-path ../fidj-node/dist` to the CLI. The generated development package uses that local SDK; the committed template requires `@ofidj/node ^3.6.24` for release. Do not claim a registry-only install until the matching SDK/generator versions are published.
+`--content` is trusted developer-authored HTML (like any checked-in application source), never untrusted visitor input. Set real terms before release; the generated agreement is explicitly a demo. The content app has no independent user database. Erasure/export cover Fidj-held membership records, and pending cleanup stays pending.
 
-## What is generated
+## Backend example — protected actions
 
-- Framework-independent TypeScript client using `FidjNodeService` on the app’s own origin.
-- Node backend using `verifyAppSession` for live membership roles before each protected request; no cached browser role is trusted for authorization.
-- Private in-memory notes, per-app preferences/history, a scoped export and confirmed departure.
-- Typechecking, browser/server build and HTTP integration tests.
-- An explicit `.env.example` with public IDs/URLs; local demo shortcuts are disabled by default.
+Omit `--content` to generate Studio Notes: a browser client plus Node backend with private in-memory notes. The backend revalidates the session and live app roles for every protected request. Owner/Editor may write; other members may read their own notes. This mode requires Node hosting and is separate from the static content app scenario.
 
-The Node backend is required. This starter is not a static-only GitHub Pages deployment. Production storage, durable deletion adapters, groups and OIDC are later milestones; generated documentation describes the current privacy limits.
+A departure through Studio Notes erases its notes and requests scoped Fidj departure. Departure directly through the Fidj dashboard revokes access but does not yet notify that independent note store. Durable storage/deletion adapters, groups and OIDC remain later milestones.
 
-## Real integration example
+## CLI and local development
 
-[`mleweb`](https://github.com/mlefree/mleweb), locally `../../mlefree/mleweb`, is a real downstream consumer. Its GitHub Actions workflow builds the coordinated SDK/generator branches, generates from scratch, builds and tests on Node 22 and 24, then uploads an artifact without publishing the site. `_old/` and `_cdn/` remain intact.
+The package exposes `create-fidj`; from its checkout use `node bin/create-fidj.cjs`. Yeoman `yo @ofidj/fidj my-app --app-id YOUR_FIDJ_ID` invokes the same scaffolder and accepts the content/title/welcome/domain options. The old `app2021` positional command is a historical reference, not the maintained interface.
 
-The Ofidj launcher also generates Studio Notes on port 8200 and mleweb/Mat’s Cloud on 8201 against the local API. See `../product-plan/09-generated-app-validation.md` for the walkthrough.
+- `--api-endpoint`: select the API (default: hosted sandbox).
+- `--sdk-path` or `FIDJ_SDK_DIR`: use a built local SDK during coordinated development.
+- `--local` or `FIDJ_LOCAL=true`: use loopback API/console and show synthetic account instructions. Supply the matching local app ID; `FIDJ_APP_ID` can override it.
+- `--replace`: regenerate only a destination containing `.fidj-generated`; unmarked projects are protected.
 
-## Tests
+Generation writes `.env.example`, `.env` and public `app.config.json`. Static configuration is embedded at build time: regenerate/rebuild when changing endpoints. Notes server configuration is read at runtime. Do not place secrets in any public configuration or content input.
 
-`npm test` checks scaffolding, output safety and configuration validation. Every output includes its own protected-route tests. The build uses [esbuild’s browser and Node targets](https://esbuild.github.io/getting-started/), with TypeScript checking performed separately.
+During this unreleased milestone, build `../fidj-node` and pass `--sdk-path ../fidj-node/dist`. Committed templates use registry dependency `@ofidj/node ^3.6.24`; a registry-only install is not validated until coordinated versions are published.
 
-## Preserve a site’s identity
+## Real validation repository
 
-Downstream apps may supply `public/site.json` and `public/hero.gif` before building. The generator renders a public homepage with an animated hero, CV/experience and contact links; `/app` retains the protected SDK workspace. mleweb uses its original Mario GIF and résumé. Content is escaped, external links are limited to HTTPS/mailto, and no sign-in or SDK API call is required to read the homepage.
+[mleweb](https://github.com/mlefree/mleweb) is the thin command-line validation fixture whose generated website is mlefree.com. Its `package.json` passes the original Mario GIF, welcome text and About/CV/contact links directly into this generator. No custom downstream renderer is required. GitHub CI runs the same generation/build path on Node 22/24 and uploads artifacts without publishing the site.
+
+Run `npm test` for scaffolding/CLI safety tests. Generated projects include TypeScript checking and HTTP integration tests for live authorization and privacy isolation. Local acceptance steps are in the workspace's `product-plan/09-generated-app-validation.md`.
