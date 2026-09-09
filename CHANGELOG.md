@@ -1,5 +1,7 @@
 # Changelog
 
+- Add --oidc-issuer for generated content/module entries while preserving branding and anonymous-entry configuration.
+
 - Clarify expired-session and queued-cleanup messages in generated account screens.
 
 - Add signed privacy readiness checks and isolated rehearsal commands to generated apps.

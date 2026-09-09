@@ -7,6 +7,7 @@ try {
     options: {
       "app-id": { type: "string" },
       "api-endpoint": { type: "string" },
+      "oidc-issuer": { type: "string" },
       "sdk-path": { type: "string" },
       title: { type: "string" },
       welcome: { type: "string" },
@@ -23,13 +24,14 @@ try {
   });
   if (values.help || positionals.length !== 1) {
     console.log(
-      "Usage: create-fidj <directory> --app-id <fidjId> [--api-endpoint <url>] [--title <text> --welcome <text> --description <text> --content <html> --domain <hostname>] [--module <built-directory> --module-entry <index.html#/route>] [--anonymous true|false] [--local] [--replace]",
+      "Usage: create-fidj <directory> --app-id <fidjId> [--api-endpoint <url>] [--title <text> --welcome <text> --description <text> --content <html> --domain <hostname>] [--module <built-directory> --module-entry <index.html#/route>] [--oidc-issuer https://api.example/oidc] [--anonymous true|false] [--local] [--replace]",
     );
     process.exitCode = values.help ? 0 : 1;
   } else {
     const dir = scaffold(positionals[0], {
       appId: process.env.FIDJ_APP_ID || values["app-id"],
       apiEndpoint: values["api-endpoint"],
+      oidcIssuer: values["oidc-issuer"],
       sdkPath: values["sdk-path"] || process.env.FIDJ_SDK_DIR,
       title: values.title,
       welcome: values.welcome,

@@ -1,8 +1,9 @@
-import { FidjNodeService } from "@ofidj/node";
+import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
 import "./style.css";
 
 const sdk = new FidjNodeService();
+const oidc = config.oidcIssuer ? new FidjOidcClient({issuer: config.oidcIssuer, clientId: config.appId, redirectUri: window.location.origin + window.location.pathname, apiEndpoint: config.apiEndpoint, storage: sessionStorage}) : null;
 const root = document.querySelector<HTMLDivElement>("#app")!;
 const appPath = `/me/apps/${encodeURIComponent(config.appId)}`;
 let signedIn = false;
@@ -232,12 +233,14 @@ function render() {
     navigate("content");
   });
   element("back-content")?.addEventListener("click", () => navigate("content"));
+  if (oidc && element("signin")) element("signin")!.innerHTML = '<p>Continue securely with your Fidj account. Your password stays with Fidj.</p><button class="primary" type="submit">Continue with Fidj</button>';
   element<HTMLFormElement>("signin")?.addEventListener("submit", (event) => {
     event.preventDefault();
-    const email = element<HTMLInputElement>("email")!.value;
-    const password = element<HTMLInputElement>("password")!.value;
+    const email = element<HTMLInputElement>("email")?.value || "";
+    const password = element<HTMLInputElement>("password")?.value || "";
     const signup = (event.submitter as HTMLButtonElement)?.name === "signup";
     void action(async () => {
+      if (oidc) {window.location.assign(await oidc.beginLogin()); return;}
       await sdk.login(email, password, { autoSignup: signup });
       await refresh();
       anonymous = false;
@@ -396,6 +399,11 @@ function renderAccount(route: string) {
 window.addEventListener("hashchange", render);
 render();
 void action(async () => {
+  if (oidc && new URL(window.location.href).searchParams.has("state")) {
+    const callback = new URL(window.location.href);
+    window.history.replaceState(null, "", window.location.pathname + "#/content");
+    await oidc.completeLogin(callback);
+  }
   await sdk.init(config.appId, {
     apiEndpoint: config.apiEndpoint,
     prod: !config.localDemo,

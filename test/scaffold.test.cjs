@@ -178,3 +178,14 @@ test("assembles an explicit application module and preserves its source", () => 
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+test("OIDC generation preserves content and rejects an unrelated issuer", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "fidj-oidc-cli-"));
+  try {
+    const output = scaffold(path.join(root, "app"), {appId: "fidj-example", apiEndpoint: "https://api.example/v3", oidcIssuer: "https://api.example/oidc", anonymous: false, content: "<h1>Original content</h1>"});
+    const config = JSON.parse(fs.readFileSync(path.join(output, "app.config.json")));
+    assert.equal(config.oidcIssuer, "https://api.example/oidc");
+    assert.equal(config.content, "<h1>Original content</h1>");
+    assert.equal(config.allowAnonymous, false);
+    assert.throws(() => scaffold(path.join(root, "bad"), {appId: "fidj-example", apiEndpoint: "https://api.example/v3", oidcIssuer: "https://unrelated.example/oidc", content: ""}));
+  } finally {fs.rmSync(root, {recursive: true, force: true});}
+});

@@ -77,3 +77,15 @@ The file adapter uses atomic writes and a serialized queue for one writer proces
 Generated starters include `npm run privacy:check`: configure the server-only `FIDJ_PRIVACY_ADAPTER_KEY` in `.env`, start the app, then run the command. It signs a readiness request, verifies capabilities and probes durable storage without exporting or deleting user records. `FIDJ_APP_URL` can override the default loopback URL. `npm run privacy:rehearse` builds and exercises an isolated temporary data store, including scoped export, failure, retry and persistence. Production app data and credentials are never inputs to that rehearsal.
 
 Readiness confirms this handler only. Register its trusted URL and independent secret with the Fidj API operator; the app owner console can then check the same connection. Group roles granted in Fidj are enforced by the generated backend on each protected operation.
+
+## Generate an OIDC app
+
+`--oidc-issuer` switches the shared content/module entry to “Continue with Fidj”. The issuer owns password entry; the generator preserves your title, welcome message, logo/content inputs and anonymous-entry choice.
+
+```sh
+create-fidj my-app --app-id YOUR_APP_ID --api-endpoint https://api.sandbox.fidj.ovh/v3 --oidc-issuer https://api.sandbox.fidj.ovh/oidc --anonymous false --content '<h1>My app</h1>'
+```
+
+An operator must enable that issuer before this command can authenticate. Register the exact deployed entry URL as the callback; it must not contain a fragment. Local loopback HTTP is supported. During the unreleased beta, use the coordinated SDK checkout through `--sdk-path`; registry-only publication is still pending.
+
+OIDC currently supports static content and application-module assemblies. The Notes storage fixture retains its existing auth flow; no migration of stored Notes subjects is implied. Static HTML/assets remain public regardless of the login screen. Confidential data needs server authorization, preferably with an HttpOnly backend session. mleweb remains the command-line generator fixture: retain the original Mario and About/CV content, and activate OIDC only after its target issuer and callback are configured.
