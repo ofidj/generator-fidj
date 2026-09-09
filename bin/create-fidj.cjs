@@ -10,9 +10,12 @@ try {
       "sdk-path": { type: "string" },
       title: { type: "string" },
       welcome: { type: "string" },
+      description: { type: "string" },
       content: { type: "string" },
       anonymous: { type: "string" },
       domain: { type: "string" },
+      module: { type: "string" },
+      "module-entry": { type: "string" },
       local: { type: "boolean" },
       replace: { type: "boolean" },
       help: { type: "boolean" },
@@ -20,7 +23,7 @@ try {
   });
   if (values.help || positionals.length !== 1) {
     console.log(
-      "Usage: create-fidj <directory> --app-id <fidjId> [--api-endpoint <url>] [--title <text> --welcome <text> --content <html> --domain <hostname>] [--anonymous true|false] [--local] [--replace]",
+      "Usage: create-fidj <directory> --app-id <fidjId> [--api-endpoint <url>] [--title <text> --welcome <text> --description <text> --content <html> --domain <hostname>] [--module <built-directory> --module-entry <index.html#/route>] [--anonymous true|false] [--local] [--replace]",
     );
     process.exitCode = values.help ? 0 : 1;
   } else {
@@ -30,9 +33,12 @@ try {
       sdkPath: values["sdk-path"] || process.env.FIDJ_SDK_DIR,
       title: values.title,
       welcome: values.welcome,
+      description: values.description,
       content: values.content,
       anonymous: values.anonymous,
       domain: values.domain,
+      module: values.module,
+      moduleEntry: values["module-entry"],
       local: values.local || process.env.FIDJ_LOCAL === "true",
       replace: values.replace,
     });

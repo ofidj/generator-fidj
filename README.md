@@ -43,3 +43,18 @@ Run `npm test` for scaffolding/CLI safety tests. Generated projects include Type
 ## Entry flow
 
 The generated content app opens on `/#/signin`. Sign in, or choose **Enter anonymously** when enabled, to open `/#/content`, containing the supplied HTML. Signed-in users can open **My privacy** separately. Sign-out and departure return to the sign-in screen. Anonymous content is public; this navigation flow is not a security boundary for static assets.
+
+## Compose an existing app as a module
+
+Build your application for the `/module/` base URL, then pass its public output to the same generator:
+
+```sh
+create-fidj my-app --app-id YOUR_FIDJ_ID --title "My App" --welcome "Welcome back" --description "Your app description" --anonymous false --module ./built-console --module-entry 'index.html#/my'
+cd my-app && npm install && npm run build-prod
+```
+
+The result is one static website: the generated SDK sign-in entry and the module under `www/module/`. After login, the entry opens the module on the same origin. The module must use the same public app ID/API and independently validate authorization for its own operations. The generator copies public build assets without changing their source; module input cannot contain environment files, dependency directories or symlinks.
+
+The module entry receives a `meta[name="fidj-signin"]` URL, relative to its base URL. A module can send its sign-in, logout or expired-session flow there. Fidj's console implements this handoff and preserves departure status. The generated preview serves module assets from an explicit build manifest, including directory index URLs.
+
+`fidj-app` now exercises this path with `npm run create:local`: its owner/profile/privacy features remain an explicit Angular console module, while the generator owns the shared entry and final assembly. The local launcher serves the generated Fidj output on port 4200. The source console is maintained outside disposable `.gen` and must be rebuilt before regenerating.

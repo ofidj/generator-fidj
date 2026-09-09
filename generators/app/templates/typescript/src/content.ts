@@ -11,7 +11,13 @@ let initialized = false;
 let roles: string[] = [];
 let consent: Record<string, boolean> = {};
 let history: Array<{ type: string; granted: boolean; changedAt: string }> = [];
-let message = "";
+const departure = new URLSearchParams(window.location.search).get("departure");
+let message =
+  departure === "completed"
+    ? `You left ${config.title}. Your other memberships and shared identity remain.`
+    : departure === "pending"
+      ? "Access was revoked. Storage cleanup is pending; contact the app owner."
+      : "";
 let failed = false;
 let busy = false;
 let leaving = false;
@@ -69,7 +75,7 @@ async function action(task: () => Promise<void>) {
   const submit = root.querySelector<HTMLButtonElement>("button.primary");
   if (submit) submit.textContent = "Please wait…";
   failed = false;
-  message = "";
+  if (initialized) message = "";
   try {
     await task();
   } catch (error) {
@@ -96,6 +102,11 @@ function render() {
   else if (!["signin", "content", "privacy"].includes(route)) route = "content";
   if (route === "privacy" && !signedIn) route = "signin";
   window.history.replaceState(null, "", "#/" + route);
+  if (route === "content" && config.moduleEntry) {
+    root.innerHTML = '<p role="status">Opening your app…</p>';
+    window.location.assign(config.moduleEntry);
+    return;
+  }
   if (route === "content") {
     root.innerHTML = `<nav class="content-nav" aria-label="App navigation"><button id="content-tab" class="selected" aria-current="page">Content</button><button id="privacy-tab">${signedIn ? "My privacy" : "Sign in"}</button><button id="exit">${signedIn ? "Sign out" : "Back to sign in"}</button></nav>${element<HTMLTemplateElement>("public-content")!.innerHTML}`;
     element("privacy-tab")!.addEventListener("click", () =>
@@ -117,7 +128,7 @@ function render() {
   ${message ? `<p role="${failed ? "alert" : "status"}" class="${failed ? "error" : "notice"}">${escape(message)}</p>` : ""}
   ${
     route === "signin"
-      ? `<div class="signin-intro"><p class="eyebrow">${escape(config.title)}</p><h1>${escape(config.welcome)}</h1><p class="signin-description">A space to explore, with an account that puts you in control.</p><div class="signin-trust"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><div><strong>Your account, with Fidj</strong><p>One identity. Your own choices for every app.</p></div></div></div>
+      ? `<div class="signin-intro"><p class="eyebrow">${escape(config.title)}</p><h1>${escape(config.welcome)}</h1><p class="signin-description">${escape(config.description)}</p><div class="signin-trust"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><div><strong>Your account, with Fidj</strong><p>One identity. Your own choices for every app.</p></div></div></div>
   <div class="signin-form"><h2>Welcome back</h2><p>Sign in to continue to ${escape(config.title)}.</p><form id="signin"><label for="email">Email address</label><input id="email" type="email" placeholder="you@example.com" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Sign in</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button></form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
 </div>`
       : `
@@ -140,7 +151,7 @@ function render() {
   <button id="export">Export my app data</button>
   <p>This app stores its session in this browser. The export covers Fidj-held records for this membership. There is no separate app database in this static template.</p>
   ${roles.includes("Owner") ? "<p>Resolve app ownership before leaving.</p>" : leaving ? '<p>Confirm departure: your membership and its Fidj-held data will be removed. Your other apps remain available.</p><button id="confirm-leave" class="danger">Confirm leaving this app</button><button id="cancel-leave">Keep my membership</button>' : '<button id="leave" class="danger">Leave this app</button>'}
-  <p><a href="${escape(config.dashboardUrl)}/my">Manage my apps and privacy on Fidj ↗</a></p>`
+  <p><a href="${escape(config.dashboardUrl)}/#/my">Manage my apps and privacy on Fidj ↗</a></p>`
   }</section>`;
   element("anonymous")?.addEventListener("click", () => {
     if (!config.allowAnonymous) return;

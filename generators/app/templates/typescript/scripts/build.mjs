@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { cp, mkdir, rm, readFile, writeFile } from "node:fs/promises";
+import { cp, mkdir, rm, readFile, writeFile, readdir } from "node:fs/promises";
 const config = JSON.parse(await readFile("app.config.json", "utf8"));
 const contentApp = typeof config.content === "string";
 await rm("dist", { recursive: true, force: true });
@@ -32,3 +32,15 @@ if (contentApp) {
   if (config.domain) await writeFile("www/CNAME", config.domain + "\n");
 }
 await cp("dist/public/index.html", "dist/public/app.html");
+
+const moduleFiles = {};
+async function collect(directory, relative = "") {
+  for (const item of await readdir(directory, { withFileTypes: true })) {
+    const name = relative + item.name;
+    if (item.isDirectory())
+      await collect(directory + "/" + item.name, name + "/");
+    else moduleFiles["/" + name] = name;
+  }
+}
+await collect("dist/public");
+await writeFile("dist/public-files.json", JSON.stringify(moduleFiles));

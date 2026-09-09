@@ -1,6 +1,6 @@
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, extname } from "node:path";
 import { verifyAppSession, SessionVerificationError } from "@ofidj/node";
 
 export interface Settings {
@@ -184,12 +184,40 @@ export function createApp(settings: Settings) {
         throw new HttpError(405, "Method not allowed.");
       const files: Record<string, [string, string]> = {
         "/": ["index.html", "text/html"],
+        "/index.html": ["index.html", "text/html"],
         "/app": ["app.html", "text/html"],
         "/hero.gif": ["hero.gif", "image/gif"],
         "/main.js": ["main.js", "text/javascript"],
         "/main.css": ["main.css", "text/css"],
         "/fidj-logo.png": ["fidj-logo.png", "image/png"],
       };
+      if (!files[pathname] && pathname.startsWith("/module/")) {
+        const manifest = JSON.parse(
+          await readFile(join(__dirname, "public-files.json"), "utf8"),
+        );
+        const asset =
+          manifest[pathname] ||
+          (pathname.endsWith("/")
+            ? manifest[pathname + "index.html"]
+            : undefined);
+        const types: Record<string, string> = {
+          ".html": "text/html",
+          ".js": "text/javascript",
+          ".css": "text/css",
+          ".json": "application/json",
+          ".png": "image/png",
+          ".svg": "image/svg+xml",
+          ".gif": "image/gif",
+          ".ico": "image/x-icon",
+          ".woff": "font/woff",
+          ".woff2": "font/woff2",
+        };
+        if (typeof asset === "string")
+          files[pathname] = [
+            asset,
+            types[extname(asset)] || "application/octet-stream",
+          ];
+      }
       const file = files[pathname];
       if (!file) throw new HttpError(404, "Not found.");
       const content = await readFile(join(__dirname, "public", file[0]));
@@ -198,7 +226,7 @@ export function createApp(settings: Settings) {
         "Content-Type": file[1],
         "X-Content-Type-Options": "nosniff",
         "Referrer-Policy": "no-referrer",
-        "Content-Security-Policy": `default-src 'self'; img-src 'self' https:; connect-src 'self' ${apiOrigin}; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`,
+        "Content-Security-Policy": `default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https:; connect-src 'self' ${apiOrigin}; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`,
       });
       res.end(req.method === "HEAD" ? undefined : content);
     } catch (error) {

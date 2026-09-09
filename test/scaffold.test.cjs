@@ -121,3 +121,60 @@ test("anonymous entry is configurable through the public CLI", () => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+
+test("assembles an explicit application module and preserves its source", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "fidj-module-"));
+  const source = path.join(root, "console");
+  const output = path.join(root, "generated");
+  fs.mkdirSync(source);
+  const html =
+    '<html><head><base href="/module/"></head><body>Owner console</body></html>';
+  fs.writeFileSync(path.join(source, "index.html"), html);
+  try {
+    scaffold(output, {
+      appId: "fidj-test",
+      anonymous: false,
+      module: source,
+      moduleEntry: "index.html#/my",
+    });
+    const config = JSON.parse(
+      fs.readFileSync(path.join(output, "app.config.json")),
+    );
+    assert.equal(config.moduleEntry, "./module/index.html#/my");
+    assert.equal(config.content, "");
+    assert.equal(config.allowAnonymous, false);
+    assert.match(
+      fs.readFileSync(path.join(output, "public/module/index.html"), "utf8"),
+      /name="fidj-signin" content="..\/index.html#\/signin"/,
+    );
+    assert.equal(
+      fs.readFileSync(path.join(source, "index.html"), "utf8"),
+      html,
+    );
+    for (const entry of [
+      "../outside.html",
+      "https://evil.example/index.html",
+    ]) {
+      assert.throws(
+        () =>
+          scaffold(output, {
+            appId: "fidj-test",
+            replace: true,
+            module: source,
+            moduleEntry: entry,
+          }),
+        /relative/,
+      );
+      assert.ok(fs.existsSync(path.join(output, "app.config.json")));
+    }
+    fs.writeFileSync(path.join(source, ".env"), "PRIVATE=not-public");
+    assert.throws(
+      () =>
+        scaffold(output, { appId: "fidj-test", replace: true, module: source }),
+      /public build output/,
+    );
+    assert.ok(fs.existsSync(path.join(output, "app.config.json")));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});

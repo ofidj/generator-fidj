@@ -9,10 +9,13 @@ module.exports = class extends Generator {
     for (const key of [
       "title",
       "welcome",
+      "description",
       "content",
       "domain",
       "sdk-path",
       "anonymous",
+      "module",
+      "module-entry",
     ])
       this.option(key, { type: String });
     this.option("api-endpoint", {
@@ -49,8 +52,11 @@ module.exports = class extends Generator {
       name,
       title: this.options.title,
       welcome: this.options.welcome,
+      description: this.options.description,
       content: this.options.content,
       anonymous: this.options.anonymous,
+      module: this.options.module,
+      moduleEntry: this.options["module-entry"],
       domain: this.options.domain,
       sdkPath: this.options["sdk-path"],
       appId: this.options["app-id"] || this.answers.appId,

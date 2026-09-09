@@ -48,3 +48,7 @@ Only when using the loopback API, set `LOCAL_DEMO=true` to show synthetic Alex/M
 The generated content app opens on `/#/signin`. Sign in, or choose **Enter anonymously** when enabled by `--anonymous true`, to open `/#/content`, containing the supplied HTML. Signed-in users can open **My privacy** separately. Sign-out and departure return to the sign-in screen. Anonymous content is public; this navigation flow is not a security boundary for static assets.
 
 Set `--anonymous false` in the generator command to remove anonymous entry and route unsigned visitors back to sign-in. This controls navigation; static HTML/assets remain public. Put confidential content behind a server-authorized endpoint.
+
+## Application modules
+
+When generated with `--module`, successful sign-in opens the copied module configured by `moduleEntry`. It runs under `/module/` on the same origin and must validate sessions/permissions independently. Its entry contains a `fidj-signin` meta URL for returning to this shared sign-in page. Module code is public static output; user data belongs behind authorized APIs. Rebuild the maintained module source and regenerate to update it; never patch its copied files here.
