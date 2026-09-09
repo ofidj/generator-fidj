@@ -42,3 +42,7 @@ The browser SDK stores the app’s session in this origin’s local storage. Use
 ## Local scenario
 
 Only when using the loopback API, set `LOCAL_DEMO=true` to show synthetic Alex/Maya/Sam sign-in shortcuts. These accounts must be seeded by your local Fidj API; the starter does not create accounts or seed data remotely. Alex is the owner, and the owner console can grant Maya Editor access.
+
+## Entry flow
+
+The generated content app opens on `/#/signin`. Sign in or choose **Enter anonymously** to open `/#/content`, containing the supplied HTML. Signed-in users can open **My privacy** separately. Sign-out and departure return to the sign-in screen. Anonymous content is public; this navigation flow is not a security boundary for static assets.

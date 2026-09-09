@@ -26,7 +26,7 @@ The package exposes `create-fidj`; from its checkout use `node bin/create-fidj.c
 
 - `--api-endpoint`: select the API (default: hosted sandbox).
 - `--sdk-path` or `FIDJ_SDK_DIR`: use a built local SDK during coordinated development.
-- `--local` or `FIDJ_LOCAL=true`: use loopback API/console and show synthetic account instructions. Supply the matching local app ID; `FIDJ_APP_ID` can override it.
+- `--local` or `FIDJ_LOCAL=true`: use the loopback API/console. Test credentials stay in the validation guide, outside the content app UI. Supply the matching local app ID; `FIDJ_APP_ID` can override it.
 - `--replace`: regenerate only a destination containing `.fidj-generated`; unmarked projects are protected.
 
 Generation writes `.env.example`, `.env` and public `app.config.json`. Static configuration is embedded at build time: regenerate/rebuild when changing endpoints. Notes server configuration is read at runtime. Do not place secrets in any public configuration or content input.
@@ -38,3 +38,7 @@ During this unreleased milestone, build `../fidj-node` and pass `--sdk-path ../f
 [mleweb](https://github.com/mlefree/mleweb) is the thin command-line validation fixture whose generated website is mlefree.com. Its `package.json` passes the original Mario GIF, welcome text and About/CV/contact links directly into this generator. No custom downstream renderer is required. GitHub CI runs the same generation/build path on Node 22/24 and uploads artifacts without publishing the site.
 
 Run `npm test` for scaffolding/CLI safety tests. Generated projects include TypeScript checking and HTTP integration tests for live authorization and privacy isolation. Local acceptance steps are in the workspace's `product-plan/09-generated-app-validation.md`.
+
+## Entry flow
+
+The generated content app opens on `/#/signin`. Sign in or choose **Enter anonymously** to open `/#/content`, containing the supplied HTML. Signed-in users can open **My privacy** separately. Sign-out and departure return to the sign-in screen. Anonymous content is public; this navigation flow is not a security boundary for static assets.
