@@ -1,0 +1,361 @@
+:root {
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  color: #1e4037;
+  background: #f3f6f0;
+  font-synthesis: none;
+  line-height: 1.5;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+textarea {
+  font: inherit;
+}
+a {
+  color: inherit;
+}
+.topbar {
+  max-width: 1180px;
+  margin: auto;
+  padding: 25px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid #dce4d9;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 19px;
+}
+.app-symbol {
+  background: #dce8d4;
+  border-radius: 12px;
+  padding: 4px 13px;
+  font-size: 30px;
+}
+.fidj-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  text-decoration: none;
+}
+.fidj-brand img {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
+}
+main {
+  max-width: 1180px;
+  margin: auto;
+  padding: 38px 32px;
+}
+h1 {
+  font-size: 48px;
+  line-height: 1.13;
+  letter-spacing: -0.045em;
+  margin: 10px 0 24px;
+  font-weight: 650;
+}
+h2 {
+  font-size: 22px;
+  letter-spacing: -0.025em;
+  margin: 0 0 12px;
+}
+h3 {
+  margin: 12px 0 8px;
+  font-size: 19px;
+}
+p {
+  color: #5d7166;
+}
+.eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  color: #527864;
+}
+.welcome {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  align-items: center;
+  gap: 90px;
+  margin: 35px 0;
+}
+.welcome h1 {
+  font-size: 68px;
+}
+.welcome > div > p {
+  max-width: 390px;
+}
+.card {
+  background: white;
+  border: 1px solid #dce5da;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 6px 20px #233b2904;
+}
+.promise {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-size: 13px;
+  color: #617268;
+  margin-top: 35px;
+}
+.promise img {
+  width: 38px;
+  height: 38px;
+  image-rendering: pixelated;
+}
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 18px 0 8px;
+}
+input,
+textarea {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cfdbd0;
+  border-radius: 8px;
+  background: #fcfdfb;
+  color: #173c30;
+}
+input:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 2px solid #567d65;
+  outline-offset: 3px;
+}
+button {
+  border: 1px solid #c8d7c8;
+  color: #245344;
+  background: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+button:hover {
+  background: #edf4e8;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.primary {
+  background: #245d49;
+  color: white;
+  border-color: #245d49;
+  display: block;
+  width: 100%;
+  margin: 22px 0 12px;
+}
+.primary:hover {
+  background: #194b3a;
+}
+.demo {
+  background: #f0f4eb;
+  border-radius: 12px;
+  padding: 15px;
+  margin-top: 24px;
+  font-size: 12px;
+}
+.demo button {
+  margin: 4px 5px 0 0;
+  font-size: 11px;
+  padding: 8px;
+}
+.demo p {
+  margin: 6px 0 12px;
+}
+.page-heading,
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+.roles {
+  font-size: 11px;
+  border: 1px solid #cbd8c9;
+  border-radius: 20px;
+  padding: 5px 10px;
+  margin-left: 8px;
+}
+nav {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #dce4d9;
+  margin: 10px 0 30px;
+  padding-bottom: 15px;
+}
+nav button {
+  border-color: transparent;
+  background: transparent;
+}
+nav button.selected {
+  background: #dfeada;
+}
+nav button:last-child {
+  margin-left: auto;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+.privacy-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+.section-heading span {
+  font-size: 12px;
+  color: #647867;
+}
+.note {
+  margin-top: 16px;
+}
+.note p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.empty {
+  text-align: center;
+  padding: 60px 28px;
+}
+.empty > span {
+  font-size: 45px;
+  color: #9ab696;
+}
+small {
+  font-size: 12px;
+  color: #6b7d70;
+}
+.notice,
+.error {
+  border-radius: 10px;
+  padding: 15px 20px;
+  margin-bottom: 24px;
+}
+.notice {
+  background: #e0edd8;
+}
+.error {
+  background: #fdebe7;
+  color: #99362d;
+}
+.agreement {
+  background: #f0f5ec;
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 13px;
+  margin: 24px 0;
+}
+.agreement span {
+  float: right;
+}
+.agreement p {
+  font-size: 12px;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 0;
+  border-bottom: 1px solid #e9eee5;
+}
+.toggle small {
+  display: block;
+  font-weight: 400;
+  margin-top: 5px;
+}
+.toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: #245d49;
+}
+.privacy-grid button {
+  margin-top: 15px;
+}
+.danger {
+  color: #a2392d;
+  border-color: #d7b2a9;
+}
+.fineprint {
+  font-size: 12px;
+  margin-top: 24px;
+}
+hr {
+  border: 0;
+  border-top: 1px solid #e3eade;
+  margin: 28px 0;
+}
+footer {
+  text-align: center;
+  font-size: 11px;
+  color: #7c8b7f;
+  padding: 40px 0 10px;
+}
+@media (max-width: 760px) {
+  main {
+    padding: 25px 18px;
+  }
+  .topbar {
+    padding: 18px;
+  }
+  .welcome,
+  .workspace,
+  .privacy-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .welcome {
+    margin-top: 10px;
+  }
+  .welcome h1 {
+    font-size: 48px;
+  }
+  .welcome > div {
+    padding: 10px;
+  }
+  .card {
+    padding: 22px;
+  }
+  .page-heading h1 {
+    font-size: 36px;
+  }
+  .fidj-brand {
+    font-size: 0;
+  }
+  .roles {
+    display: inline-block;
+    margin: 8px 0;
+  }
+  .page-heading {
+    align-items: flex-start;
+  }
+}

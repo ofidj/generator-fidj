@@ -1,74 +1,40 @@
 # @ofidj/generator-fidj
 
-[![NPM version][npm-image]][npm-url]
-[![Build Status][travis-image]][travis-url]
+Generate a TypeScript browser app and Node backend with Fidj sign-in, live role checks and per-app privacy. The maintained default replaces the old app2021 Angular/Ionic template. Legacy templates remain for reference and are no longer the default generation path.
 
-> build great mobile and web angular/ionic apps based on fidj.ovh authentication.
->
-> _Renamed from `generator-fidj` at 1.0.0. The old `generator-fidj@3.x` is deprecated. The yeoman command becomes `yo @ofidj/fidj` (note the `@ofidj/` prefix)._
+## Generate locally
 
-## Prerequisites
+Node 22 or later is required. Create an app in Fidj to obtain its public `fidjId`. No private signing key is embedded in generated browser code.
 
-Look at mat's gist : https://gist.github.com/mlefree/2156f66dfb441f107bef157dde56a836
-
-## Installation
-
-First, install [Yeoman](http://yeoman.io) and generator-fidj using [npm](https://www.npmjs.com/) (we assume you have pre-installed [node.js](https://nodejs.org/)) :
-```bash
-npm install -g yo
-npm install -g @ionic/cli
-npm install -g @angular/cli
-npm install -g @ofidj/generator-fidj
-```
-Then generate your new project:
-```bash
-yo @ofidj/fidj
-```
-or as an expert :
-```bash
-yo @ofidj/fidj my-app app2021 your-app-id "" me-as-user "my description" \
-   "Welcome there" \
-   "Hey<br>Heres my content: <img src=blank /><br> \o/ "
-```
-
-## Development
-
-Make sure you've got yeoman installed :
-```bash
-npm install -g yo
-npm install -g @ionic/cli
-npm install -g @angular/cli
-```
-
-Clone the repo, install it :
-```bash
-cd generator-fidj
+```sh
+node bin/create-fidj.cjs my-app --app-id YOUR_FIDJ_ID --api-endpoint https://api.sandbox.fidj.ovh/v3
+cd my-app
+cp .env.example .env
 npm install
-npm link
+npm test
+npm start
 ```
 
-And then use your local Fidj generator : 
-```bash
-mkdir your-app && cd your-app && \
-   yo @ofidj/fidj my-app app2021 your-app-id "" me-as-user "my description" \
-   "Welcome there" \
-   "Hey<br>Heres my content: <img src=blank /><br> \o/ " 
+The package also exposes `create-fidj`; the Yeoman entry point `yo @ofidj/fidj my-app --app-id YOUR_FIDJ_ID` generates the same template. Existing non-empty destinations are never overwritten.
 
-# look at the code : code .
-# or start it : npm start
-```
+During this unreleased cross-repo milestone, first build `../fidj-node`, then pass `--sdk-path ../fidj-node/dist` to the CLI. The generated development package uses that local SDK; the committed template requires `@ofidj/node ^3.6.24` for release. Do not claim a registry-only install until the matching SDK/generator versions are published.
 
-## License
+## What is generated
 
-MIT 2021 © [fidj.ovh](fidj.ovh)
+- Framework-independent TypeScript client using `FidjNodeService` on the app’s own origin.
+- Node backend using `verifyAppSession` for live membership roles before each protected request; no cached browser role is trusted for authorization.
+- Private in-memory notes, per-app preferences/history, a scoped export and confirmed departure.
+- Typechecking, browser/server build and HTTP integration tests.
+- An explicit `.env.example` with public IDs/URLs; local demo shortcuts are disabled by default.
 
-[npm-image]: https://badge.fury.io/js/@ofidj%2Fgenerator-fidj.svg
-[npm-url]: https://npmjs.org/package/@ofidj/generator-fidj
-[travis-image]: https://travis-ci.org/ofidj/generator-fidj.svg?branch=master
-[travis-url]: https://travis-ci.org/ofidj/generator-fidj
-[daviddm-image]: https://david-dm.org/ofidj/generator-fidj.svg?theme=shields.io
-[daviddm-url]: https://david-dm.org/ofidj/generator-fidj
-[coveralls-image]: https://coveralls.io/repos/ofidj/generator-fidj/badge.svg
-[coveralls-url]: https://coveralls.io/r/ofidj/generator-fidj
-[codecov-image]: https://codecov.io/gh/ofidj/generator-fidj/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/ofidj/generator-fidj
+The Node backend is required. This starter is not a static-only GitHub Pages deployment. Production storage, durable deletion adapters, groups and OIDC are later milestones; generated documentation describes the current privacy limits.
+
+## Real integration example
+
+[`mleweb`](https://github.com/mlefree/mleweb), locally `../../mlefree/mleweb`, is a real downstream consumer. Its GitHub Actions workflow builds the coordinated SDK/generator branches, generates from scratch, builds and tests on Node 22 and 24, then uploads an artifact without publishing the site. `_old/` and `_cdn/` remain intact.
+
+The Ofidj launcher also generates Studio Notes on port 8200 and mleweb/Mat’s Cloud on 8201 against the local API. See `../product-plan/09-generated-app-validation.md` for the walkthrough.
+
+## Tests
+
+`npm test` checks scaffolding, output safety and configuration validation. Every output includes its own protected-route tests. The build uses [esbuild’s browser and Node targets](https://esbuild.github.io/getting-started/), with TypeScript checking performed separately.

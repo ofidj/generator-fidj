@@ -1,7 +1,7 @@
 {
   "name": "@ofidj/generator-fidj",
-  "version": "1.0.0",
-  "description": "build great mobile angular ionic apps based on fidj.ovh authentication",
+  "version": "1.0.1",
+  "description": "Generate a TypeScript app with Fidj sign-in, live server-side roles and per-app privacy.",
   "homepage": "https://fidj.ovh",
   "bugs": {
     "url": "https://github.com/ofidj/generator-fidj/issues"
@@ -10,6 +10,8 @@
     "access": "public"
   },
   "files": [
+    "bin",
+    "lib",
     "generators"
   ],
   "main": "generators/index.js",
@@ -35,7 +37,13 @@
   },
   "repository": "https://github.com/ofidj/generator-fidj.git",
   "scripts": {
-    "test": "echo nope"
+    "test": "node --test test/*.test.cjs"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "bin": {
+    "create-fidj": "bin/create-fidj.cjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
 }
