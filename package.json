@@ -12,9 +12,11 @@
   "files": [
     "bin",
     "lib",
-    "generators"
+    "generators",
+    "!generators/app/templates/app2018",
+    "!generators/app/templates/app2021"
   ],
-  "main": "generators/index.js",
+  "main": "./lib/scaffold.cjs",
   "keywords": [
     "fidj",
     "angular",
