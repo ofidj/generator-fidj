@@ -36,9 +36,27 @@ During this unreleased milestone, build `../fidj-node` and pass `--sdk-path ../f
 
 ## Real validation repository
 
-[mleweb](https://github.com/mlefree/mleweb) is the thin command-line validation fixture whose generated website is mlefree.com. Its `package.json` passes the original Mario GIF, welcome text and About/CV/contact links directly into this generator. No custom downstream renderer is required. GitHub CI runs the same generation/build path on Node 22/24 and uploads artifacts without publishing the site.
+[mleweb](https://github.com/mlefree/mleweb) is the thin command-line validation fixture whose generated website is mlefree.com. Its `package.json` passes the original Mario GIF, welcome text and About/CV/contact links directly into this generator. No custom downstream renderer is required. GitHub CI runs the same generation/build path on Node 22/24 and uploads artifacts. Publishing the site to gh-pages, which is what mlefree.com serves, is a separate deliberate job: it runs on mleweb's `master` or on an explicit workflow dispatch, never from a version branch.
 
 Run `npm test` for scaffolding/CLI safety tests. Generated projects include TypeScript checking and HTTP integration tests for live authorization and privacy isolation. Local acceptance steps are in the workspace's `product-plan/09-generated-app-validation.md`.
+
+
+## Releasing to npm
+
+Pushing to the `package` branch publishes the package, the same convention the
+SDK and contracts repositories use. CI installs, runs the tests and publishes
+with `NPM_TOKEN`; this package publishes from the repository root rather than
+from a `dist` directory, because it ships its sources.
+
+The package contains `bin/`, `lib/` and the `typescript` template only. The
+`app2018` and `app2021` Yeoman templates are excluded: nothing reads them, and
+they accounted for 11.8MB of the 11.9MB published. `main` points at
+`lib/scaffold.cjs`, so `require('@ofidj/generator-fidj')` returns `{ scaffold }`
+alongside the `create-fidj` binary.
+
+Publish contracts before the SDK, and the SDK before anything that resolves it
+from the registry: the SDK depends on `@ofidj/contracts` by range, so a build
+picks up whatever is published at the time.
 
 ## Entry flow
 
