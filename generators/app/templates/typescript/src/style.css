@@ -1,193 +1,252 @@
+@import "./tokens.css";
+@import "./fonts.css";
+
+/* The generated shell. Flat surfaces, 1px rules, one accent — the look is
+ * carried by type and by borders, never by elevation or rounding. Values come
+ * from tokens.css; nothing below may introduce a literal color. */
+
 :root {
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    sans-serif;
-  color: #1e4037;
-  background: #f3f6f0;
+  font-family: var(--fidj-font-sans);
+  color: var(--fidj-text);
+  background: var(--fidj-paper);
   font-synthesis: none;
-  line-height: 1.5;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 * {
   box-sizing: border-box;
 }
 body {
   margin: 0;
+  background: var(--fidj-paper);
 }
 button,
 input,
-textarea {
+textarea,
+select {
   font: inherit;
 }
 a {
   color: inherit;
+  text-decoration: none;
 }
+a:hover {
+  color: var(--fidj-accent);
+}
+::placeholder {
+  color: var(--fidj-placeholder);
+}
+
+/* Type scale. Display serif for page titles, mono for every label and eyebrow,
+ * sans for everything a person actually reads. */
+h1 {
+  font-family: var(--fidj-font-display);
+  font-weight: 400;
+  font-size: clamp(32px, 4vw, 44px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  margin: 10px 0 20px;
+  text-wrap: balance;
+}
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  margin: 0 0 12px;
+}
+h3 {
+  margin: 12px 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+p {
+  color: var(--fidj-text-faint);
+  text-wrap: pretty;
+}
+small {
+  font-size: 12.5px;
+  color: var(--fidj-text-faint);
+}
+.eyebrow {
+  font-family: var(--fidj-font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fidj-text-faint);
+  margin: 0;
+}
+
 .topbar {
-  max-width: 1180px;
-  margin: auto;
-  padding: 25px 32px;
+  background: var(--fidj-ink);
+  color: var(--fidj-on-ink);
+  padding: 0 clamp(20px, 4vw, 56px);
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-  border-bottom: 1px solid #dce4d9;
+  height: 60px;
 }
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  font-weight: 700;
-  text-decoration: none;
-  font-size: 19px;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+.brand img {
+  height: 20px;
+  width: auto;
+  max-width: 80px;
+  object-fit: contain;
+  display: block;
+}
+.brand:hover {
+  color: var(--fidj-on-ink);
 }
 .app-symbol {
-  background: #dce8d4;
-  border-radius: 12px;
-  padding: 4px 13px;
-  font-size: 30px;
+  font-size: 15px;
+  color: var(--fidj-accent);
 }
 .fidj-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
-  text-decoration: none;
+  font-family: var(--fidj-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fidj-on-ink-faint);
+}
+.fidj-brand:hover {
+  color: var(--fidj-on-ink);
 }
 .fidj-brand img {
-  width: 28px;
-  height: 28px;
-  image-rendering: pixelated;
+  width: 18px;
+  height: 18px;
 }
 main {
-  max-width: 1180px;
+  max-width: var(--fidj-shell-max);
   margin: auto;
-  padding: 38px 32px;
+  padding: clamp(32px, 5vw, 56px) clamp(20px, 4vw, 56px) 80px;
 }
-h1 {
-  font-size: 48px;
-  line-height: 1.13;
-  letter-spacing: -0.045em;
-  margin: 10px 0 24px;
-  font-weight: 650;
-}
-h2 {
-  font-size: 22px;
-  letter-spacing: -0.025em;
-  margin: 0 0 12px;
-}
-h3 {
-  margin: 12px 0 8px;
-  font-size: 19px;
-}
-p {
-  color: #5d7166;
-}
-.eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  font-weight: 700;
-  color: #527864;
-}
-.welcome {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  align-items: center;
-  gap: 90px;
-  margin: 35px 0;
-}
-.welcome h1 {
-  font-size: 68px;
-}
-.welcome > div > p {
-  max-width: 390px;
-}
+
 .card {
-  background: white;
-  border: 1px solid #dce5da;
-  border-radius: 20px;
-  padding: 30px;
-  box-shadow: 0 6px 20px #233b2904;
+  background: var(--fidj-surface);
+  border: 1px solid var(--fidj-line);
+  border-radius: var(--fidj-radius);
+  padding: 24px;
 }
 .promise {
   display: flex;
-  gap: 14px;
+  gap: 12px;
   align-items: center;
   font-size: 13px;
-  color: #617268;
-  margin-top: 35px;
+  color: var(--fidj-text-faint);
+  border-top: 1px solid var(--fidj-line-soft);
+  padding-top: 20px;
+  margin-top: 32px;
 }
 .promise img {
-  width: 38px;
-  height: 38px;
-  image-rendering: pixelated;
+  width: 22px;
+  height: 22px;
 }
+
 label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
-  margin: 18px 0 8px;
+  font-family: var(--fidj-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fidj-text-faint);
+  margin: 18px 0 7px;
 }
 input,
-textarea {
+textarea,
+select {
   display: block;
   width: 100%;
-  padding: 12px;
-  border: 1px solid #cfdbd0;
-  border-radius: 8px;
-  background: #fcfdfb;
-  color: #173c30;
+  padding: 13px 14px;
+  border: 1px solid var(--fidj-line-strong);
+  border-radius: var(--fidj-radius);
+  background: var(--fidj-surface);
+  color: var(--fidj-text);
+  font-size: 15px;
 }
 input:focus,
 textarea:focus,
-button:focus-visible {
-  outline: 2px solid #567d65;
-  outline-offset: 3px;
+select:focus {
+  outline: none;
+  border-color: var(--fidj-ink);
+  box-shadow: var(--fidj-focus-ring);
 }
 button {
-  border: 1px solid #c8d7c8;
-  color: #245344;
-  background: white;
-  padding: 10px 15px;
-  border-radius: 8px;
+  border: 1px solid var(--fidj-line-strong);
+  border-radius: var(--fidj-radius);
+  color: var(--fidj-text);
+  background: transparent;
+  padding: 11px 16px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 500;
 }
-button:hover {
-  background: #edf4e8;
+button:hover:not(:disabled) {
+  border-color: var(--fidj-ink);
 }
 button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
 }
 .primary {
-  background: #245d49;
-  color: white;
-  border-color: #245d49;
+  background: var(--fidj-ink);
+  color: var(--fidj-paper);
+  border-color: var(--fidj-ink);
   display: block;
   width: 100%;
-  margin: 22px 0 12px;
+  padding: 14px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 20px 0 10px;
 }
-.primary:hover {
-  background: #194b3a;
+.primary:hover:not(:disabled) {
+  background: var(--fidj-ink-raised);
+  border-color: var(--fidj-ink-raised);
 }
+.danger {
+  color: var(--fidj-danger);
+  border-color: var(--fidj-danger-line);
+}
+.danger:hover:not(:disabled) {
+  border-color: var(--fidj-danger);
+  background: var(--fidj-danger-tint);
+}
+
 .demo {
-  background: #f0f4eb;
-  border-radius: 12px;
-  padding: 15px;
+  background: var(--fidj-surface-sunk);
+  border: 1px solid var(--fidj-line-soft);
+  border-radius: var(--fidj-radius);
+  padding: 16px;
   margin-top: 24px;
-  font-size: 12px;
+  font-size: 12.5px;
+}
+.demo strong {
+  font-family: var(--fidj-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fidj-text-faint);
+  font-weight: 400;
 }
 .demo button {
-  margin: 4px 5px 0 0;
-  font-size: 11px;
-  padding: 8px;
+  margin: 4px 6px 0 0;
+  font-size: 12px;
+  padding: 8px 10px;
 }
 .demo p {
-  margin: 6px 0 12px;
+  margin: 8px 0 12px;
 }
+
 .page-heading,
 .section-heading {
   display: flex;
@@ -195,45 +254,71 @@ button:disabled {
   align-items: center;
   gap: 20px;
 }
-.roles {
+.section-heading {
+  align-items: baseline;
+  border-bottom: 1px solid var(--fidj-line-soft);
+  padding-bottom: 10px;
+  margin-bottom: 16px;
+}
+.section-heading span {
+  font-family: var(--fidj-font-mono);
   font-size: 11px;
-  border: 1px solid #cbd8c9;
-  border-radius: 20px;
-  padding: 5px 10px;
+  letter-spacing: 0.1em;
+  color: var(--fidj-text-faint);
+}
+.roles {
+  font-family: var(--fidj-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fidj-text-faint);
+  border: 1px solid var(--fidj-line);
+  border-radius: var(--fidj-radius);
+  padding: 5px 9px;
   margin-left: 8px;
 }
+
 nav {
   display: flex;
-  gap: 8px;
-  border-bottom: 1px solid #dce4d9;
-  margin: 10px 0 30px;
-  padding-bottom: 15px;
+  flex-wrap: wrap;
+  gap: 2px;
+  border-bottom: 1px solid var(--fidj-line-soft);
+  margin: 10px 0 32px;
 }
 nav button {
-  border-color: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: transparent;
+  padding: 16px 14px;
+  font-size: 14px;
+  color: var(--fidj-text-faint);
+}
+nav button:hover:not(:disabled) {
+  color: var(--fidj-text);
 }
 nav button.selected {
-  background: #dfeada;
+  color: var(--fidj-text);
+  border-bottom-color: var(--fidj-ink);
 }
 nav button:last-child {
   margin-left: auto;
 }
+
 .workspace {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
-  gap: 28px;
+  gap: 24px;
   align-items: start;
 }
 .privacy-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 28px;
+  gap: 24px;
   align-items: start;
 }
-.section-heading span {
-  font-size: 12px;
-  color: #647867;
+.privacy-grid button {
+  margin-top: 16px;
 }
 .note {
   margin-top: 16px;
@@ -241,44 +326,55 @@ nav button:last-child {
 .note p {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  color: var(--fidj-text-muted);
 }
 .empty {
   text-align: center;
-  padding: 60px 28px;
+  padding: 56px 28px;
 }
 .empty > span {
-  font-size: 45px;
-  color: #9ab696;
+  font-size: 28px;
+  color: var(--fidj-accent);
 }
-small {
-  font-size: 12px;
-  color: #6b7d70;
-}
+
 .notice,
 .error {
-  border-radius: 10px;
-  padding: 15px 20px;
+  border: 1px solid var(--fidj-line);
+  border-left: 2px solid var(--fidj-ok);
+  border-radius: var(--fidj-radius);
+  background: var(--fidj-surface);
+  font-size: 13.5px;
+  color: var(--fidj-text-muted);
+  padding: 14px 18px;
   margin-bottom: 24px;
 }
-.notice {
-  background: #e0edd8;
-}
 .error {
-  background: #fdebe7;
-  color: #99362d;
+  border-left-color: var(--fidj-danger);
+  background: var(--fidj-danger-tint);
+  color: var(--fidj-danger-strong);
 }
+
 .agreement {
-  background: #f0f5ec;
-  border-radius: 10px;
+  background: var(--fidj-surface-sunk);
+  border: 1px solid var(--fidj-line-soft);
+  border-radius: var(--fidj-radius);
   padding: 16px;
   font-size: 13px;
   margin: 24px 0;
 }
+.agreement strong {
+  font-size: 13.5px;
+}
 .agreement span {
   float: right;
+  font-family: var(--fidj-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fidj-text-faint);
 }
 .agreement p {
-  font-size: 12px;
+  font-size: 12.5px;
 }
 .toggle {
   display: flex;
@@ -286,7 +382,13 @@ small {
   justify-content: space-between;
   gap: 20px;
   padding: 18px 0;
-  border-bottom: 1px solid #e9eee5;
+  margin: 0;
+  border-bottom: 1px solid var(--fidj-line-soft);
+  font-family: var(--fidj-font-sans);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fidj-text);
 }
 .toggle small {
   display: block;
@@ -294,176 +396,345 @@ small {
   margin-top: 5px;
 }
 .toggle input {
-  width: 20px;
-  height: 20px;
-  accent-color: #245d49;
-}
-.privacy-grid button {
-  margin-top: 15px;
-}
-.danger {
-  color: #a2392d;
-  border-color: #d7b2a9;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--fidj-ink);
 }
 .fineprint {
   font-size: 12px;
+  color: var(--fidj-text-faint);
   margin-top: 24px;
 }
 hr {
   border: 0;
-  border-top: 1px solid #e3eade;
+  border-top: 1px solid var(--fidj-line-soft);
   margin: 28px 0;
 }
 footer {
   text-align: center;
-  font-size: 11px;
-  color: #7c8b7f;
-  padding: 40px 0 10px;
+  font-family: var(--fidj-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--fidj-text-faint);
+  border-top: 1px solid var(--fidj-line-soft);
+  padding: 28px 0 10px;
 }
+
 @media (max-width: 760px) {
   main {
-    padding: 25px 18px;
+    padding: 28px 18px 56px;
   }
   .topbar {
-    padding: 18px;
+    padding: 0 18px;
   }
-  .welcome,
   .workspace,
   .privacy-grid {
     grid-template-columns: 1fr;
-    gap: 24px;
-  }
-  .welcome {
-    margin-top: 10px;
-  }
-  .welcome h1 {
-    font-size: 48px;
-  }
-  .welcome > div {
-    padding: 10px;
   }
   .card {
-    padding: 22px;
-  }
-  .page-heading h1 {
-    font-size: 36px;
+    padding: 20px;
   }
   .fidj-brand {
     font-size: 0;
+    gap: 0;
   }
   .roles {
     display: inline-block;
-    margin: 8px 0;
+    margin: 8px 0 0;
   }
   .page-heading {
     align-items: flex-start;
   }
 }
 
-.site-nav {
-  border: 0;
+/* The sign-in entry: ink panel carrying the app's identity, paper panel
+ * carrying the form. It stacks below 860px, ink first. It is full-bleed, so
+ * the shell's own header, padding and footer step aside while it is shown. */
+body.signin-view .topbar,
+body.signin-view main > footer {
+  display: none;
+}
+body.signin-view main {
+  max-width: none;
   margin: 0;
   padding: 0;
-  align-items: center;
-  gap: 24px;
-  font-size: 13px;
 }
-.site-nav a {
-  text-decoration: none;
-}
-.workspace-link {
-  border: 1px solid #cad8c8;
-  padding: 9px 14px;
-  border-radius: 8px;
-}
-.personal-hero {
-  display: grid;
-  grid-template-columns: 1.1fr 1fr;
-  gap: 36px;
-  align-items: center;
-  min-height: 590px;
-}
-.mario-scene {
-  text-align: center;
-}
-.mario-scene img {
+/* The sign-in entry: ink panel carrying the app's identity, paper panel
+ * carrying the form. It stacks below 860px, ink first. */
+.signin-shell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  min-height: 100vh;
   width: 100%;
-  max-width: 570px;
-  height: auto;
-  object-fit: contain;
-  image-rendering: pixelated;
+  background: var(--fidj-paper);
 }
-.personal-intro h1 {
-  font-size: 66px;
-  line-height: 1.08;
-  max-width: 480px;
+.signin-form [role="alert"],
+.signin-form [role="status"] {
+  margin: 0 0 20px;
 }
-.personal-tagline {
-  font-size: 21px;
-  color: #274b3b;
-  font-weight: 600;
+.signin-intro {
+  flex: 1.35 1 520px;
+  background: var(--fidj-ink);
+  color: var(--fidj-on-ink);
+  padding: 56px clamp(32px, 5vw, 80px) 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 52px;
+  justify-content: space-between;
 }
-.personal-intro > p {
-  max-width: 440px;
-}
-.site-links {
+.signin-masthead {
   display: flex;
   align-items: center;
-  gap: 24px;
-  margin: 28px 0;
+  gap: 12px;
 }
-.site-primary {
-  display: inline-block;
-  padding: 12px 19px;
-  border-radius: 9px;
-  background: #9d302b;
-  color: white;
-  text-decoration: none;
+/* The app's own mark, beside its name. An app that supplied none borrows the
+ * Fidj mark, which keeps the corner from being blank without pretending the
+ * app is Fidj — the trust line below always names the provider explicitly. */
+.signin-masthead .app-mark {
+  height: 22px;
+  width: auto;
+  max-width: 88px;
+  object-fit: contain;
+  display: block;
+  flex: none;
+}
+.signin-masthead strong {
+  font-size: 17px;
   font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.signin-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 620px;
+}
+/* An app that supplies no highlights would leave the panel hollow under
+ * space-between; centre its identity in the space instead. */
+.signin-intro.is-plain .signin-identity {
+  margin-block: auto;
+}
+.signin-intro h1 {
+  margin: 0;
+  font-size: clamp(40px, 5.2vw, 68px);
+  line-height: 1.03;
+  letter-spacing: -0.015em;
+}
+.signin-description {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--fidj-on-ink-muted);
+  max-width: 52ch;
+}
+/* One hairline grid: the 1px gap is the parent background showing through. */
+.signin-highlights {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1px;
+  background: var(--fidj-ink-raised);
+  border: 1px solid var(--fidj-ink-raised);
+}
+.signin-highlights article {
+  background: var(--fidj-ink);
+  padding: 22px 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.signin-highlights .eyebrow {
+  color: var(--fidj-accent);
+  letter-spacing: 0.12em;
+}
+.signin-highlights h2 {
+  margin: 0;
+  font-size: 15px;
+}
+.signin-highlights p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--fidj-on-ink-faint);
+}
+.signin-trust {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--fidj-line-soft);
+  padding-top: 20px;
+}
+.signin-trust-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.signin-trust .signin-logo {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.signin-trust strong {
+  font-size: 13px;
+  color: var(--fidj-text);
+}
+.signin-trust p:not(.signin-trust-head) {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--fidj-text-muted);
+}
+.signin-trust p:not(.signin-trust-head)::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--fidj-accent);
+  flex: none;
+  transform: translateY(-2px);
+}
+
+.signin-form {
+  flex: 1 1 420px;
+  background: var(--fidj-paper);
+  padding: 56px clamp(28px, 4vw, 64px) 44px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.signin-form > * {
+  max-width: 400px;
+  width: 100%;
+  margin-inline: auto;
+}
+.signin-form h2 {
+  font-family: var(--fidj-font-display);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin: 0 0 20px;
+}
+.signin-form > p {
+  margin: 0;
   font-size: 14px;
 }
-.personal-contact {
-  font-size: 13px;
-  line-height: 2;
+.signin-form input {
+  min-height: 48px;
 }
-.resume-section {
-  scroll-margin-top: 30px;
-  display: grid;
-  grid-template-columns: 0.7fr 1.3fr;
-  gap: 70px;
-  border-top: 1px solid #dce4d9;
-  padding: 60px 0;
+.signin-form form > button {
+  min-height: 48px;
+  width: 100%;
+  margin-top: 12px;
 }
-.resume-intro h2 {
-  font-size: 34px;
+.signin-form .secondary {
+  background: transparent;
+  margin-top: 8px;
+  font-weight: 500;
 }
-.resume-timeline article {
-  padding: 0 0 26px 24px;
-  border-left: 2px solid #d6e0d2;
+/* The label row carries its own escape hatch, as the mockup does: the reset
+ * link sits with the field it is about, not adrift under the form. */
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 7px;
 }
-.resume-timeline h3 {
-  margin: 4px 0 8px;
-}
-.resume-timeline h3 span {
-  font-weight: 400;
-}
-.resume-period {
-  font-size: 12px;
+.field-head label {
   margin: 0;
-  color: #7e6252;
-  font-weight: 600;
 }
-.resume-timeline article > p:last-child {
-  margin-bottom: 0;
+.field-head a {
+  font-size: 12px;
+  color: var(--fidj-text-faint);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-.personal-footer {
+.password-field {
+  position: relative;
+  display: block;
+}
+.password-field input {
+  padding-right: 68px;
+}
+.password-field button {
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: none;
+  font-family: var(--fidj-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fidj-text-faint);
+  padding: 8px;
+}
+.password-field button:hover:not(:disabled) {
+  color: var(--fidj-text);
+}
+.signin-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--fidj-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fidj-text-faint);
+  margin: 0;
+}
+.signin-divider::before,
+.signin-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--fidj-line);
+}
+.anonymous-entry {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 25px;
+  width: 100%;
+  min-height: 46px;
 }
-.personal-footer p {
-  margin-bottom: 0;
+.signin-form .signin-footnote {
+  font-size: 12px;
+  text-align: center;
+  margin: 0;
+}
+.signin-badges {
+  margin-top: auto;
+  padding-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.signin-badges span {
+  font-family: var(--fidj-font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fidj-text-faint);
+  border: 1px solid var(--fidj-line);
+  padding: 5px 9px;
+}
+
+@media (max-width: 860px) {
+  .signin-intro {
+    gap: 32px;
+    padding: 36px 24px 32px;
+  }
+  .signin-form {
+    padding: 36px 24px 32px;
+  }
+  .signin-description {
+    font-size: 15px;
+  }
 }
 
 .public-content {
@@ -488,112 +759,6 @@ footer {
 .content-account input:not([type="checkbox"]) {
   width: 100%;
 }
-
-.signin-logo {
-  width: 56px;
-  height: 56px;
-  image-rendering: pixelated;
-}
-
-.signin-shell {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: white;
-  border: 1px solid #dce5da;
-  border-radius: 24px;
-  overflow: hidden;
-  margin: 34px auto;
-  box-shadow: 0 18px 70px #23413208;
-}
-.signin-shell > [role="alert"],
-.signin-shell > [role="status"] {
-  grid-column: 1 / -1;
-  margin: 16px 24px 0;
-}
-.signin-intro {
-  padding: 64px 52px;
-  background: #eaf0e5;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-}
-.signin-intro h1 {
-  max-width: 390px;
-  font-size: clamp(36px, 4.3vw, 58px);
-  margin: 24px 0;
-}
-.signin-description {
-  font-size: 17px;
-  max-width: 330px;
-  margin: 0 0 64px;
-}
-.signin-trust {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-top: auto;
-}
-.signin-trust .signin-logo {
-  width: 36px;
-  height: 36px;
-}
-.signin-trust strong {
-  font-size: 13px;
-}
-.signin-trust p {
-  font-size: 12px;
-  margin: 4px 0 0;
-}
-.signin-form {
-  padding: 56px 52px;
-}
-.signin-form h2 {
-  font-size: 28px;
-  margin-bottom: 8px;
-}
-.signin-form > p {
-  margin: 0 0 28px;
-}
-.signin-form input {
-  width: 100%;
-  min-height: 48px;
-}
-.signin-form form button {
-  width: 100%;
-  min-height: 48px;
-  margin-top: 12px;
-}
-.signin-form .secondary {
-  background: white;
-}
-.signin-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #738277;
-  font-size: 12px;
-  margin: 24px 0 18px;
-}
-.signin-divider::before,
-.signin-divider::after {
-  content: "";
-  height: 1px;
-  flex: 1;
-  background: #e1e7de;
-}
-.anonymous-entry {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  min-height: 46px;
-  background: #f5f7f2;
-}
-.signin-form .signin-footnote {
-  font-size: 12px;
-  text-align: center;
-  margin: 12px 0 0;
-}
 .content-nav {
   display: flex;
   align-items: center;
@@ -602,38 +767,150 @@ footer {
 .content-nav #exit {
   margin-left: auto;
 }
+.signin-logo {
+  width: 22px;
+  height: 22px;
+}
+
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 summary:focus-visible {
-  outline: 3px solid #4b7e68;
-  outline-offset: 4px;
+  outline: 2px solid var(--fidj-ink);
+  outline-offset: 3px;
 }
-@media (max-width: 720px) {
-  .signin-shell {
+
+/* The personal site layout mleweb builds from --content. Same system, wider
+ * measure: the supplied HTML is developer-authored and styled, not sanitised. */
+.site-nav {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  gap: 24px;
+  font-size: 13px;
+}
+.workspace-link {
+  border: 1px solid var(--fidj-line-strong);
+  border-radius: var(--fidj-radius);
+  padding: 9px 14px;
+}
+.personal-hero {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 36px;
+  align-items: center;
+  min-height: 590px;
+}
+.mario-scene {
+  text-align: center;
+}
+.mario-scene img {
+  width: 100%;
+  max-width: 570px;
+  height: auto;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.personal-intro h1 {
+  font-size: clamp(44px, 6vw, 66px);
+  line-height: 1.05;
+  max-width: 480px;
+}
+.personal-tagline {
+  font-size: 19px;
+  color: var(--fidj-text-muted);
+}
+.personal-intro > p {
+  max-width: 440px;
+}
+.site-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin: 28px 0;
+}
+.site-primary {
+  display: inline-block;
+  padding: 13px 19px;
+  border-radius: var(--fidj-radius);
+  background: var(--fidj-ink);
+  color: var(--fidj-paper);
+  font-weight: 600;
+  font-size: 14px;
+}
+.site-primary:hover {
+  background: var(--fidj-ink-raised);
+  color: var(--fidj-paper);
+}
+.personal-contact {
+  font-size: 13px;
+  line-height: 2;
+}
+.resume-section {
+  scroll-margin-top: 30px;
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  gap: 70px;
+  border-top: 1px solid var(--fidj-line-soft);
+  padding: 60px 0;
+}
+.resume-intro h2 {
+  font-family: var(--fidj-font-display);
+  font-weight: 400;
+  font-size: 34px;
+}
+.resume-timeline article {
+  padding: 0 0 26px 24px;
+  border-left: 1px solid var(--fidj-line);
+}
+.resume-timeline h3 {
+  margin: 4px 0 8px;
+}
+.resume-timeline h3 span {
+  font-weight: 400;
+}
+.resume-period {
+  font-family: var(--fidj-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0;
+  color: var(--fidj-text-faint);
+}
+.resume-timeline article > p:last-child {
+  margin-bottom: 0;
+}
+.personal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+}
+.personal-footer p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  .personal-hero,
+  .resume-section {
     grid-template-columns: 1fr;
-    margin: 0;
+    gap: 28px;
+    min-height: 0;
   }
-  .signin-intro {
-    padding: 28px;
+  .resume-section {
+    padding: 36px 0;
   }
-  .signin-intro h1 {
-    margin: 12px 0;
-  }
-  .signin-description {
-    font-size: 15px;
-    margin-bottom: 24px;
-  }
-  .signin-form {
-    padding: 28px;
-  }
-  .content-nav {
+  .personal-footer,
+  .site-links {
     flex-wrap: wrap;
-  }
-  main {
-    padding: 24px 16px;
-  }
-  .topbar {
-    padding: 18px 16px;
+    gap: 16px;
   }
 }
+
+.signin-agreement { margin-block: 1rem; }
+.agreement-choice { display: flex; align-items: flex-start; gap: 0.75rem; font-family: var(--fidj-font-sans); font-size: 14px; letter-spacing: normal; text-transform: none; line-height: 1.45; color: var(--fidj-text-muted); }
+.agreement-choice input[type="checkbox"] { width: 1.15rem; height: 1.15rem; min-height: 0; flex: 0 0 auto; margin: 0.15rem 0 0; padding: 0; accent-color: var(--fidj-ink); }
+.signin-agreement button { margin-block: 0.5rem; padding: 0; border: 0; background: transparent; text-decoration: underline; }
+#agreement-dialog { color: var(--fidj-text); background: var(--fidj-paper); border: 1px solid var(--fidj-line); border-radius: var(--fidj-radius); padding: 1.5rem; max-width: min(40rem, calc(100vw - 2rem)); max-height: 80vh; overflow: auto; }
+#agreement-text { white-space: pre-wrap; overflow-wrap: anywhere; }

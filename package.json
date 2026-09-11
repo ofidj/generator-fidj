@@ -12,15 +12,11 @@
   "files": [
     "bin",
     "lib",
-    "generators",
-    "!generators/app/templates/app2018",
-    "!generators/app/templates/app2021"
+    "generators"
   ],
   "main": "./lib/scaffold.cjs",
   "keywords": [
     "fidj",
-    "angular",
-    "ionic",
     "yeoman-generator"
   ],
   "dependencies": {

@@ -29,7 +29,7 @@ The current unreleased generator requires the matching `@ofidj/node` 3.6.24 SDK.
 - `test/server.test.mjs`: fresh HTTP servers verify role changes, revoked/foreign sessions, outage failure, per-user notes and privacy scope.
 - `scripts/build.mjs`: browser and Node builds using [esbuild](https://esbuild.github.io/getting-started/), with a separate TypeScript typecheck.
 
-Run `npm test` before changing the template. Every fresh generated app includes the same tests.
+Use TDD: add and run a failing behavior test before implementation (red), make it pass (green), then refactor and run `npm test`. Change maintained template source and regenerate to verify that every fresh app receives the fix.
 
 ## Privacy scope
 
@@ -41,7 +41,7 @@ The browser SDK stores the app’s session in this origin’s local storage. Use
 
 ## Local scenario
 
-Only when using the loopback API, set `LOCAL_DEMO=true` to show synthetic Alex/Maya/Sam sign-in shortcuts. These accounts must be seeded by your local Fidj API; the starter does not create accounts or seed data remotely. Alex is the owner, and the owner console can grant Maya Editor access.
+For the Notes fixture only, `LOCAL_DEMO=true` with the loopback API enables synthetic Alex/Maya/Sam sign-in shortcuts. Content/module entries keep test accounts in developer documentation. These accounts must be seeded by your local Fidj API; the starter does not create accounts or seed data remotely. Alex is the owner, and the owner console can grant Maya Editor access.
 
 ## Entry flow
 
@@ -71,3 +71,12 @@ Keep `FIDJ_DATA_DIR` outside public assets and generated output. Use one writer 
 After starting the Notes backend with its server-only adapter secret, run `npm run privacy:check`. The signed check confirms export/erase capabilities and writable storage without accessing user records. Override `FIDJ_APP_URL` for a deployed HTTPS backend. Keep this secret out of browser configuration.
 
 Run `npm run privacy:rehearse` for an isolated temporary-store HTTP scenario covering live roles, scoped export, persistence, failure and idempotent erasure. It never points at your running data directory. Groups are managed in the Fidj owner console; direct and group roles are checked live by the backend.
+
+## Agreement at sign-in
+
+Sign-in and account creation require the unchecked service-agreement checkbox.
+Read the app's current text/version from the dialog before accepting. If the
+agreement cannot load, the form stays blocked. The API records the accepted
+version per app; optional privacy choices are separate. The app owner must replace
+the default demo agreement using the Fidj app's `configurationAsJSON.serviceAgreement`
+(`version` and `text`) before release. No generated-source edit is needed.

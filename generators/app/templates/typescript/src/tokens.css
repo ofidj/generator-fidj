@@ -1,0 +1,56 @@
+/* The Fidj design system, v2 — every value the product paints with.
+ *
+ * This file is shared verbatim with fidj-app (src/theme/fidj-tokens.css), so a
+ * style change made here reaches Fidj, mleweb and every generated app at once.
+ * Keep it free of anything path-dependent: @font-face lives in fonts.css, and
+ * each consumer supplies its own. Nothing else in a stylesheet may introduce a
+ * literal colour, family or radius.
+ */
+
+:root {
+  /* Ink — the dark half of the split: brand panel, header, primary button. */
+  --fidj-ink: #14110f;
+  --fidj-ink-raised: #2a2521;
+  --fidj-ink-line: #38322c;
+  --fidj-ink-line-soft: #4a423b;
+  --fidj-on-ink: #f2eee9;
+  --fidj-on-ink-muted: #b6ada5;
+  --fidj-on-ink-faint: #8c847c;
+
+  /* Paper — the light half. */
+  --fidj-paper: #fbfaf8;
+  --fidj-surface: #ffffff;
+  --fidj-surface-sunk: #f5f1ec;
+  --fidj-surface-tint: #f2eee9;
+  --fidj-line: #e4ded7;
+  --fidj-line-soft: #ece7e1;
+  --fidj-line-strong: #dfd9d2;
+  --fidj-line-hover: #c9c1b8;
+  --fidj-text: #14110f;
+  --fidj-text-muted: #4a4540;
+  --fidj-text-faint: #6b655f;
+  --fidj-placeholder: #a8a099;
+
+  /* Accents. The red is the Fidj mark; it identifies the account and privacy
+   * provider, so it stays sparing — a dot, a rule, a hover. */
+  --fidj-accent: #d6342c;
+  --fidj-danger: #b8352c;
+  --fidj-danger-strong: #8c2a22;
+  --fidj-danger-tint: #fdf7f6;
+  --fidj-danger-line: #e8d9d6;
+  --fidj-ok: #3f7a4f;
+  --fidj-warn: #c07a1e;
+  --fidj-warn-tint: #fbf7f1;
+
+  --fidj-focus-ring: 0 0 0 3px rgb(20 17 15 / 0.07);
+  --fidj-overlay-shadow: 0 12px 32px rgb(20 17 15 / 0.18);
+
+  --fidj-font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+  --fidj-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --fidj-font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+
+  /* Squared corners are the loudest signal of this style: 2px everywhere, and
+   * a full round only for avatars and status dots. */
+  --fidj-radius: 2px;
+  --fidj-shell-max: 1180px;
+}

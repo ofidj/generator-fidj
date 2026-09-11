@@ -1,3 +1,4 @@
+import {agreementMarkup, bindAgreement, acceptedAgreement} from "./service-agreement";
 import { FidjNodeService } from "@ofidj/node";
 import "./style.css";
 
@@ -23,6 +24,7 @@ let view = "workspace";
 let notice = "";
 let error = "";
 let busy = false;
+let leaving = false;
 const escape = (value: unknown) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -83,7 +85,7 @@ function render() {
   <main>${notice ? `<p class="notice" role="status">${escape(notice)}</p>` : ""}${error ? `<p class="error" role="alert">${escape(error)}</p>` : ""}
   ${
     !session
-      ? `<section class="welcome"><div><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>Good ideas<br>start here.</h1><p>Keep your notes together, with access you understand and privacy you control.</p><div class="promise"><img src="/fidj-logo.png" alt=""><span>Your account connects through Fidj.<br>Your choices belong to this app.</span></div></div><form id="signin" class="card"><h2>Welcome to ${escape(settings.title)}</h2><p>Sign in with your Fidj account.</p><label for="email">Email</label><input id="email" type="email" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required><button class="primary" type="submit">Sign in</button>${settings.localDemo ? `<div class="demo"><strong>Try the local example</strong><p>Alex owns the app. Maya and Sam start with the Free role.</p><button type="button" data-demo="alex">Alex · owner</button><button type="button" data-demo="maya">Maya · member</button><button type="button" data-demo="sam">Sam · member</button></div>` : ""}</form></section>`
+      ? `<section class="welcome"><div><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>Good ideas<br>start here.</h1><p>Keep your notes together, with access you understand and privacy you control.</p><div class="promise"><img src="/fidj-logo.png" alt=""><span>Your account connects through Fidj.<br>Your choices belong to this app.</span></div></div><form id="signin" class="card"><h2>Welcome to ${escape(settings.title)}</h2><p>Sign in with your Fidj account.</p><label for="email">Email</label><input id="email" type="email" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required>${agreementMarkup()}<button class="primary" type="submit" disabled>Continue</button>${settings.localDemo ? `<div class="demo"><strong>Try the local example</strong><p>Alex owns the app. Maya and Sam start with the Free role.</p><button type="button" data-demo="alex">Alex · owner</button><button type="button" data-demo="maya">Maya · member</button><button type="button" data-demo="sam">Sam · member</button></div>` : ""}</form></section>`
       : `
   <div class="page-heading"><div><p class="eyebrow">YOUR WORKSPACE</p><h1>A place to think.</h1><p>${escape(session.username)} <span class="roles">${session.roles.map(escape).join(" · ") || "No assigned roles"}</span></p></div><button id="signout">Sign out</button></div>
   <nav><button id="workspace-tab" class="${view === "workspace" ? "selected" : ""}">My notes</button><button id="privacy-tab" class="${view === "privacy" ? "selected" : ""}">My privacy</button><button id="refresh">Refresh access</button></nav>
@@ -101,16 +103,19 @@ function render() {
                 )
                 .join("")
             : "<p>No changes yet.</p>"
-        }<hr><h2>Leave this app</h2><p>This removes your app membership and this starter’s notes. Your Fidj account and other memberships remain.</p>${session.roles.includes("Owner") ? "<p>As the app owner, resolve ownership before leaving.</p>" : '<button id="leave" class="danger">Leave and erase my app data</button>'}<p class="fineprint">Exports here include your Fidj membership and this starter’s notes. The registered app-data handler lets Fidj export and erase these notes too. If cleanup is pending, retry from My privacy on Fidj. Minimal completion receipts are retained; backups and unregistered systems are outside this operation.</p></article></section>`
+        }<hr><h2>Leave this app</h2><p>This removes your app membership and this starter’s notes. Your Fidj account and other memberships remain.</p>${session.roles.includes("Owner") ? "<p>As the app owner, resolve ownership before leaving.</p>" : leaving ? '<div role="alertdialog" aria-labelledby="leave-title"><h3 id="leave-title">Confirm departure</h3><p>Your membership, consent and notes in this app will be removed. Your Fidj account and other apps remain available.</p><button id="confirm-leave" class="danger">Confirm leaving and erase</button><button id="cancel-leave">Keep my membership</button></div>' : '<button id="leave" class="danger">Leave and erase my app data</button>'}<p class="fineprint">Exports here include your Fidj membership and this starter’s notes. The registered app-data handler lets Fidj export and erase these notes too. If cleanup is pending, retry from My privacy on Fidj. Minimal completion receipts are retained; backups and unregistered systems are outside this operation.</p></article></section>`
   }`
   }
   <footer>Built with Fidj · One identity. Separate choices for every app.</footer></main>`;
+  void bindAgreement(el<HTMLFormElement>("signin"), settings.title, settings.apiEndpoint, settings.appId);
   el<HTMLFormElement>("signin")?.addEventListener("submit", (event) => {
     event.preventDefault();
+    const acceptance = acceptedAgreement(event.currentTarget as HTMLFormElement);
+    if (!acceptance) return;
     const email = el<HTMLInputElement>("email").value;
     const password = el<HTMLInputElement>("password").value;
     void action(async () => {
-      await sdk.login(email, password, { autoSignup: false });
+      await sdk.login(email, password, { autoSignup: false, ...acceptance });
       await load();
     });
   });
@@ -202,12 +207,14 @@ function render() {
       }),
   );
   el("leave")?.addEventListener("click", () => {
-    if (
-      !confirm(
-        `Leave ${settings.title}? Your membership, consent and notes here will be removed. Other apps remain available.`,
-      )
-    )
-      return;
+    leaving = true;
+    render();
+  });
+  el("cancel-leave")?.addEventListener("click", () => {
+    leaving = false;
+    render();
+  });
+  el("confirm-leave")?.addEventListener("click", () => {
     void action(async () => {
       const result = await api("privacy/leave", "DELETE", {
         confirm: settings.appId,
@@ -216,6 +223,7 @@ function render() {
       session = null;
       notes = [];
       privacy = null;
+      leaving = false;
       notice =
         result.status === "pending"
           ? "Access revoked. Cleanup is pending. Open My privacy on Fidj and choose Retry cleanup."

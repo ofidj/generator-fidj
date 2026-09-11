@@ -13,6 +13,9 @@ await Promise.all([
     target: "es2022",
     outfile: "dist/public/main.js",
     sourcemap: true,
+    // The design system's fonts are copied with public/; esbuild must leave
+    // their url()s alone rather than try to resolve them at build time.
+    external: ["*.woff2"],
   }),
   build({
     entryPoints: ["server/index.ts"],

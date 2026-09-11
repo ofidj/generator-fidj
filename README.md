@@ -2,10 +2,12 @@
 
 Generate a Fidj-integrated TypeScript app with a short command. Public identity and content are generator inputs; authentication and per-app privacy are reusable template behavior. Node 22 or 24 is the validation matrix.
 
+Registry examples require published compatible versions. For current workspace development, supply a built local SDK with `--sdk-path`.
+
 ## Content app — static hosting
 
 ```sh
-create-fidj my-app --app-id YOUR_FIDJ_ID --title "My App" --welcome "Welcome" --content "<p>About my app</p>" --domain example.com
+npx -y -p @ofidj/generator-fidj -p yo yo @ofidj/fidj my-app --app-id YOUR_FIDJ_ID --title "My App" --welcome "Welcome" --content "<p>About my app</p>" --domain example.com
 cd my-app
 npm install && npm run build-prod
 ```
@@ -18,27 +20,55 @@ Serve `www/` on a static host. It contains your public content, SDK sign-in/acco
 
 Omit `--content` to generate Studio Notes: a browser client plus Node backend with private persisted notes. The backend revalidates the session and live app roles for every protected request. Owner/Editor may write; other members may read their own notes. This mode requires Node hosting and is separate from the static content app scenario.
 
+Departure uses an in-app confirmation that states the membership, consent and notes being removed and preserves the membership when cancelled.
+
 Configure the generated privacy adapter so departure from either Studio Notes or Fidj erases the same app data. Notes persist outside disposable output. Failed cleanup stays pending in Fidj and can be retried; completed receipts remain visible. See the generated README for server-side configuration and persistence limits.
 
 ## CLI and local development
 
-The package exposes `create-fidj`; from its checkout use `node bin/create-fidj.cjs`. Yeoman `yo @ofidj/fidj my-app --app-id YOUR_FIDJ_ID` invokes the same scaffolder and accepts the content/title/welcome/domain options. The old `app2021` positional command is a historical reference, not the maintained interface.
+The public entry is `yo @ofidj/fidj`; output goes to `<cwd>/<appname>`. Use the `npx` form above or install once:
+
+```sh
+npm install --no-save @ofidj/generator-fidj yo
+npx --no-install yo @ofidj/fidj my-app --app-id YOUR_FIDJ_ID
+```
+
+Repeat a flag for `--highlight` and `--badge`; the values are read from the
+command line, so a comma inside one is safe. The old `app2021` positional command
+and its Ionic/Cordova templates are gone; the `typescript` template is the only
+one.
+
+> Maintainers: `bin/create-fidj.cjs` is the same scaffolder without Yeoman, for
+> tooling that runs from a checkout and cannot install `yo` —
+> `scripts/local-stack.py` and `fidj-app`'s `create:local` use it.
+> `test/parity.test.cjs` fails if either door ever gains an input the other
+> lacks. It is not an entry point to hand to anyone building an app.
 
 - `--anonymous true|false`: show or hide anonymous entry in content apps (default: `true`). Set `--anonymous false` for a sign-in-only entry flow, as mleweb does.
+- `--highlight "<heading>|<body>"`: add a numbered cell to the sign-in panel, repeatable up to six. These are the app's own selling points, so an app that passes none simply shows its identity — mleweb passes none, Fidj passes four.
+- `--badge <text>`: add a trust badge under the sign-in form, repeatable up to four, 40 characters each. None are supplied by default — "EU-hosted" or "GDPR art. 17 · 20" are claims about a particular app, not about every app the generator makes.
+- `--logo <image>` and `--favicon <image>`: the app's own marks, copied into `public/brand/`. The logo sits beside the app name at the top of the sign-in panel; the favicon goes in the browser tab. Both fall back to the Fidj mark, so neither is ever blank. Accepts `.png`, `.svg`, `.gif`, `.jpg`, `.webp` or `.ico` under 512KB — an animated GIF works as a logo, and as a favicon in the browsers that animate one.
 - `--api-endpoint`: select the API (default: hosted sandbox).
 - `--sdk-path` or `FIDJ_SDK_DIR`: use a built local SDK during coordinated development.
 - `--local` or `FIDJ_LOCAL=true`: use the loopback API/console. Test credentials stay in the validation guide, outside the content app UI. Supply the matching local app ID; `FIDJ_APP_ID` can override it.
 - `--replace`: regenerate only a destination containing `.fidj-generated`; unmarked projects are protected.
 
+The generated shell paints from one design system: `src/tokens.css` holds every
+colour, family and radius, and `src/style.css` may not introduce a literal of
+its own. Fonts are self-hosted under `public/fonts` and served from the build
+manifest, so a generated site stays statically hostable and makes no
+third-party request on sign-in. fidj-app consumes the same tokens, which is why
+a style change lands here first.
+
 Generation writes `.env.example`, `.env` and public `app.config.json`. Static configuration is embedded at build time: regenerate/rebuild when changing endpoints. Notes server configuration is read at runtime. Do not place secrets in any public configuration or content input.
 
-During this unreleased milestone, build `../fidj-node` and pass `--sdk-path ../fidj-node/dist`. Committed templates use registry dependency `@ofidj/node ^3.6.24`; a registry-only install is not validated until coordinated versions are published.
+For unpublished coordinated changes, build the sibling SDK and pass `--sdk-path` with its absolute `dist` path. Committed templates use registry dependency `@ofidj/node ^3.6.24`; a registry-only install is not validated until coordinated versions are published.
 
 ## Real validation repository
 
 [mleweb](https://github.com/mlefree/mleweb) is the thin command-line validation fixture whose generated website is mlefree.com. Its `package.json` passes the original Mario GIF, welcome text and About/CV/contact links directly into this generator. No custom downstream renderer is required. GitHub CI runs the same generation/build path on Node 22/24 and uploads artifacts. Publishing the site to gh-pages, which is what mlefree.com serves, is a separate deliberate job: it runs on mleweb's `master` or on an explicit workflow dispatch, never from a version branch.
 
-Run `npm test` for scaffolding/CLI safety tests. Generated projects include TypeScript checking and HTTP integration tests for live authorization and privacy isolation. Local acceptance steps are in the workspace's `product-plan/09-generated-app-validation.md`.
+Run `npm test` for scaffolding/CLI safety tests. Generated projects include TypeScript checking and HTTP integration tests for live authorization and privacy isolation. See the [local acceptance walkthrough](../LOCAL-DEVELOPMENT.md). Follow TDD: add/run a failing generator or generated-app test before implementation, make it green, then refactor and rerun regression checks.
 
 
 ## Releasing to npm
@@ -49,8 +79,8 @@ with `NPM_TOKEN`; this package publishes from the repository root rather than
 from a `dist` directory, because it ships its sources.
 
 The package contains `bin/`, `lib/` and the `typescript` template only. The
-`app2018` and `app2021` Yeoman templates are excluded: nothing reads them, and
-they accounted for 11.8MB of the 11.9MB published. `main` points at
+`app2018` and `app2021` Yeoman templates were deleted: nothing read them, and
+they accounted for 11.8MB of the repository. `main` points at
 `lib/scaffold.cjs`, so `require('@ofidj/generator-fidj')` returns `{ scaffold }`
 alongside the `create-fidj` binary.
 
@@ -67,7 +97,7 @@ The generated content app opens on `/#/signin`. Sign in, or choose **Enter anony
 Build your application for the `/module/` base URL, then pass its public output to the same generator:
 
 ```sh
-create-fidj my-app --app-id YOUR_FIDJ_ID --title "My App" --welcome "Welcome back" --description "Your app description" --anonymous false --module ./built-console --module-entry 'index.html#/my'
+npx -y -p @ofidj/generator-fidj -p yo yo @ofidj/fidj my-app --app-id YOUR_FIDJ_ID --title "My App" --welcome "Welcome back" --description "Your app description" --anonymous false --module ./built-console --module-entry 'index.html#/my'
 cd my-app && npm install && npm run build-prod
 ```
 
@@ -96,14 +126,28 @@ Generated starters include `npm run privacy:check`: configure the server-only `F
 
 Readiness confirms this handler only. Register its trusted URL and independent secret with the Fidj API operator; the app owner console can then check the same connection. Group roles granted in Fidj are enforced by the generated backend on each protected operation.
 
-## Generate an OIDC app
+## Beta OIDC input
 
-`--oidc-issuer` switches the shared content/module entry to “Continue with Fidj”. The issuer owns password entry; the generator preserves your title, welcome message, logo/content inputs and anonymous-entry choice.
+`--oidc-issuer` selects the OIDC entry for content/module apps while preserving branding and anonymous-entry configuration. This is beta: the API ships an integrated provider from 3.6.26, but it serves no `/oidc` routes until an operator configures an issuer and signing keys, so confirm the issuer you pass actually answers discovery before offering it.
 
-```sh
-create-fidj my-app --app-id YOUR_APP_ID --api-endpoint https://api.sandbox.fidj.ovh/v3 --oidc-issuer https://api.sandbox.fidj.ovh/oidc --anonymous false --content '<h1>My app</h1>'
-```
+A compatible issuer, REST API and registered callback without a fragment are prerequisites. Validate that integration and coordinated SDK publication before offering it to app builders. Notes retains its existing authentication flow; no subject migration is implied.
 
-An operator must enable that issuer before this command can authenticate. Register the exact deployed entry URL as the callback; it must not contain a fragment. Local loopback HTTP is supported. During the unreleased beta, use the coordinated SDK checkout through `--sdk-path`; registry-only publication is still pending.
+## Required service agreement
 
-OIDC currently supports static content and application-module assemblies. The Notes storage fixture retains its existing auth flow; no migration of stored Notes subjects is implied. Static HTML/assets remain public regardless of the login screen. Confidential data needs server authorization, preferably with an HttpOnly backend session. mleweb remains the command-line generator fixture: retain the original Mario and About/CV content, and activate OIDC only after its target issuer and callback are configured.
+All generated sign-in and account-creation forms (content, composed Fidj and
+Notes) share an unchecked required agreement checkbox. Both submit buttons stay
+disabled until it is checked. Reading the agreement opens an in-app dialog;
+failed agreement loading keeps sign-in blocked. Anonymous entry, when enabled,
+is not a login and does not record agreement acceptance.
+
+The text and version come from the app's public API metadata, not copied generator
+settings. The API records acceptance before issuing the app token, preserves
+optional choices, and rejects a missing choice or stale version. Repeated login
+with the same version does not duplicate the history. Administrative membership
+creation does not fabricate a user's acceptance.
+
+Before release, the owner sets `configurationAsJSON.serviceAgreement` to
+`{"version":"2026-09-11","text":"Your complete app service agreement"}` through
+`PUT /apps/:appId`, preserving its other configuration fields. Changing the text
+requires a new version. Until configured, the API exposes the explicitly labelled
+`starter-demo-1` demo agreement. No generated-source edit is necessary.

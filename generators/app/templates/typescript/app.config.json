@@ -6,5 +6,9 @@
   "localDemo": false,
   "allowAnonymous": true,
   "moduleEntry": "",
-  "description": "A space to explore, with an account that puts you in control."
+  "description": "A space to explore, with an account that puts you in control.",
+  "highlights": [],
+  "badges": [],
+  "logo": "./fidj-logo.png",
+  "favicon": "./fidj-logo.png"
 }

@@ -13,6 +13,10 @@ test("generates a standalone typed client and server without private keys", () =
     });
     assert.ok(fs.existsSync(path.join(output, "server/index.ts")));
     assert.ok(fs.existsSync(path.join(output, "src/main.ts")));
+    const main = fs.readFileSync(path.join(output, "src/main.ts"), "utf8");
+    assert.doesNotMatch(main, /\bconfirm\s*\(/);
+    assert.match(main, /role="alertdialog"/);
+    assert.match(main, /Keep my membership/);
     assert.ok(fs.existsSync(path.join(output, ".gitignore")));
     assert.match(
       fs.readFileSync(path.join(output, ".env.example"), "utf8"),
@@ -140,12 +144,13 @@ test("assembles an explicit application module and preserves its source", () => 
     const config = JSON.parse(
       fs.readFileSync(path.join(output, "app.config.json")),
     );
-    assert.equal(config.moduleEntry, "./module/index.html#/my");
+    // A directory, not its index file: no index.html in the address bar.
+    assert.equal(config.moduleEntry, "./module/#/my");
     assert.equal(config.content, "");
     assert.equal(config.allowAnonymous, false);
     assert.match(
       fs.readFileSync(path.join(output, "public/module/index.html"), "utf8"),
-      /name="fidj-signin" content="..\/index.html#\/signin"/,
+      /name="fidj-signin" content="..\/#\/signin"/,
     );
     assert.equal(
       fs.readFileSync(path.join(source, "index.html"), "utf8"),

@@ -241,7 +241,16 @@ export function createApp(
         "/main.css": ["main.css", "text/css"],
         "/fidj-logo.png": ["fidj-logo.png", "image/png"],
       };
-      if (!files[pathname] && pathname.startsWith("/module/")) {
+      // Beyond the named files above, three directories are served from the
+      // build manifest: the assembled application module, the design system's
+      // self-hosted fonts, and any logo or favicon the app supplied. The
+      // manifest only resolves paths the build actually produced.
+      if (
+        !files[pathname] &&
+        (pathname.startsWith("/module/") ||
+          pathname.startsWith("/fonts/") ||
+          pathname.startsWith("/brand/"))
+      ) {
         const manifest = JSON.parse(
           await readFile(join(__dirname, "public-files.json"), "utf8"),
         );
