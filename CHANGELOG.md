@@ -4,7 +4,7 @@
 
 Dated entries are historical; current workflow is in the package README.
 
-## [Unreleased]
+## [1.0.3] - 2026-09-11
 
 - Send a new account into the app, where a returning sign-in lands, instead of the shell's account card.
 - Use the same submit label on the starter app's own form as on the shared entry.
