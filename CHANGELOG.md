@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.5] - 2026-09-12
+
+- Permit images served by the configured Fidj API origin in the generated server's CSP, so local and self-hosted public activity badges render without widening the policy to arbitrary HTTP origins.
+
 ## [1.0.4] - 2026-09-12
 
 - Replace transport error names with written sign-in guidance, preserve the submitted form after failure, and explain the agreement requirement on submit without hiding disabled actions from keyboard users.

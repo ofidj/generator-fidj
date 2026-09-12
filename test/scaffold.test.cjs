@@ -12,6 +12,10 @@ test("generates a standalone typed client and server without private keys", () =
       apiEndpoint: "http://localhost:3201/v3",
     });
     assert.ok(fs.existsSync(path.join(output, "server/index.ts")));
+    assert.match(
+      fs.readFileSync(path.join(output, "server/index.ts"), "utf8"),
+      /img-src 'self' https: \$\{apiOrigin\}/,
+    );
     assert.ok(fs.existsSync(path.join(output, "src/main.ts")));
     const main = fs.readFileSync(path.join(output, "src/main.ts"), "utf8");
     assert.doesNotMatch(main, /\bconfirm\s*\(/);
