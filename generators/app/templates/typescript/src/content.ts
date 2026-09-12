@@ -2,10 +2,12 @@ import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage} f
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
 import "./style.css";
+import { showVersionBadge } from "./version";
 
 const sdk = new FidjNodeService();
 const oidc = config.oidcIssuer ? new FidjOidcClient({issuer: config.oidcIssuer, clientId: config.appId, redirectUri: window.location.origin + window.location.pathname, apiEndpoint: config.apiEndpoint, storage: sessionStorage}) : null;
 const root = document.querySelector<HTMLDivElement>("#app")!;
+showVersionBadge(config.releaseVersion);
 const appPath = `/me/apps/${encodeURIComponent(config.appId)}`;
 let signedIn = false;
 let emailVerified = false;

@@ -1,6 +1,7 @@
 import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage} from "./service-agreement";
 import { FidjNodeService } from "@ofidj/node";
 import "./style.css";
+import { showVersionBadge } from "./version";
 
 type Session = { username: string; roles: string[] };
 type Note = { id: string; title: string; body: string; createdAt: string };
@@ -10,6 +11,7 @@ type Settings = {
   apiEndpoint: string;
   dashboardUrl: string;
   localDemo: boolean;
+  releaseVersion: string;
 };
 const root = document.querySelector<HTMLDivElement>("#app")!;
 const sdk = new FidjNodeService();
@@ -248,6 +250,7 @@ function render() {
 async function start() {
   try {
     settings = await (await fetch("/api/config")).json();
+    showVersionBadge(settings.releaseVersion);
     await sdk.init(settings.appId, {
       apiEndpoint: settings.apiEndpoint,
       prod: !settings.localDemo,

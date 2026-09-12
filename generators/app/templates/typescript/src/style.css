@@ -419,6 +419,21 @@ footer {
   border-top: 1px solid var(--fidj-line-soft);
   padding: 28px 0 10px;
 }
+.fidj-version {
+  position: fixed;
+  right: 10px;
+  bottom: 8px;
+  z-index: 1000;
+  padding: 4px 7px;
+  border: 1px solid var(--fidj-line-soft);
+  border-radius: var(--fidj-radius);
+  background: var(--fidj-paper);
+  color: var(--fidj-text-faint);
+  font-family: var(--fidj-font-mono);
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0.9;
+}
 
 @media (max-width: 760px) {
   main {

@@ -21,6 +21,12 @@ test("generates a standalone typed client and server without private keys", () =
     assert.doesNotMatch(main, /\bconfirm\s*\(/);
     assert.match(main, /role="alertdialog"/);
     assert.match(main, /Keep my membership/);
+    const config = JSON.parse(
+      fs.readFileSync(path.join(output, "app.config.json"), "utf8"),
+    );
+    assert.match(config.releaseVersion, /^\d{2}\.\d{2}\.\d{2}$/);
+    assert.match(main, /showVersionBadge/);
+    assert.ok(fs.existsSync(path.join(output, "src/version.ts")));
     assert.ok(fs.existsSync(path.join(output, ".gitignore")));
     assert.match(
       fs.readFileSync(path.join(output, ".env.example"), "utf8"),

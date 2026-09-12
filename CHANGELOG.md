@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.6] - 2026-09-12
+
+- Give every generated app an always-visible bottom-right release date in
+  `YY.MM.DD` form, derived automatically when the app is generated.
+
 ## [1.0.5] - 2026-09-12
 
 - Permit images served by the configured Fidj API origin in the generated server's CSP, so local and self-hosted public activity badges render without widening the policy to arbitrary HTTP origins.
