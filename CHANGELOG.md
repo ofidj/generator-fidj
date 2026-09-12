@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.8] - 2026-09-12
+
+- Carry the dated version through server-backed generated apps and show the
+  serving API version beside it in Fidj's own shell.
+
 ## [1.0.7] - 2026-09-12
 
 - Distinguish a missing service agreement from an unavailable Fidj API and let

@@ -11,6 +11,7 @@ export interface Settings {
   apiEndpoint: string;
   dashboardUrl: string;
   title: string;
+  releaseVersion: string;
   localDemo: boolean;
 }
 class HttpError extends Error {
@@ -324,6 +325,7 @@ if (require.main === module) {
     apiEndpoint,
     dashboardUrl: process.env.FIDJ_DASHBOARD_URL || "https://fidj.ovh",
     title: process.env.APP_TITLE || "My workspace",
+    releaseVersion: process.env.APP_VERSION || "",
     localDemo:
       process.env.LOCAL_DEMO === "true" &&
       host === "127.0.0.1" &&

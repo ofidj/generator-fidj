@@ -25,6 +25,7 @@ test("generates a standalone typed client and server without private keys", () =
       fs.readFileSync(path.join(output, "app.config.json"), "utf8"),
     );
     assert.match(config.releaseVersion, /^\d{2}\.\d{2}\.\d{2}$/);
+    assert.match(fs.readFileSync(path.join(output, ".env.example"), "utf8"), /APP_VERSION=\d{2}\.\d{2}\.\d{2}/);
     assert.match(main, /showVersionBadge/);
     assert.ok(fs.existsSync(path.join(output, "src/version.ts")));
     const agreement = fs.readFileSync(

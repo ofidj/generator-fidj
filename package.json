@@ -1,6 +1,6 @@
 {
   "name": "@ofidj/generator-fidj",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Generate a TypeScript app with Fidj sign-in, live server-side roles and per-app privacy.",
   "homepage": "https://fidj.ovh",
   "bugs": {

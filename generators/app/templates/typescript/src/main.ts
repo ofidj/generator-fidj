@@ -250,7 +250,7 @@ function render() {
 async function start() {
   try {
     settings = await (await fetch("/api/config")).json();
-    showVersionBadge(settings.releaseVersion);
+    showVersionBadge(settings.releaseVersion, settings.title === "Fidj" ? settings.apiEndpoint : undefined);
     await sdk.init(settings.appId, {
       apiEndpoint: settings.apiEndpoint,
       prod: !settings.localDemo,
