@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.9] - 2026-09-13
+
+- Offer the provider entry to an app with its own backend, not only to content
+  and module apps: `main.ts` gains the redirect sign-in, the app server serves
+  `FIDJ_OIDC_ISSUER` to its page, and the guard that refused those apps is gone.
+
 ## [1.0.8] - 2026-09-12
 
 - Carry the dated version through server-backed generated apps and show the

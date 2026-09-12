@@ -320,9 +320,16 @@ if (require.main === module) {
     throw new Error("Invalid Fidj API URL.");
   const port = Number(process.env.PORT || 8200);
   const host = process.env.HOST || "127.0.0.1";
+  // The page needs the issuer to start a redirect sign-in, and it may only be
+  // this API's own provider: an issuer on another origin would send people to
+  // type this app's credentials somewhere unrelated.
+  const oidcIssuer = process.env.FIDJ_OIDC_ISSUER || "";
+  if (oidcIssuer && new URL(oidcIssuer).href !== new URL("/oidc", api).href)
+    throw new Error("FIDJ_OIDC_ISSUER must be the Fidj API's own /oidc endpoint.");
   const settings = {
     appId,
     apiEndpoint,
+    oidcIssuer,
     dashboardUrl: process.env.FIDJ_DASHBOARD_URL || "https://fidj.ovh",
     title: process.env.APP_TITLE || "My workspace",
     releaseVersion: process.env.APP_VERSION || "",

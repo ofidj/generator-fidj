@@ -128,7 +128,7 @@ Readiness confirms this handler only. Register its trusted URL and independent s
 
 ## Beta OIDC input
 
-`--oidc-issuer` selects the OIDC entry for content/module apps while preserving branding and anonymous-entry configuration. This is beta: the API ships an integrated provider from 3.6.26, but it serves no `/oidc` routes until an operator configures an issuer and signing keys, so confirm the issuer you pass actually answers discovery before offering it.
+`--oidc-issuer` selects the OIDC entry for any generated app — a content site, a console module, or an app with its own backend — while preserving branding and anonymous-entry configuration. The entry becomes a single **Continue with Fidj** button, no password field, and the generated `.env` carries `FIDJ_OIDC_ISSUER` so the app's own server can serve it to its page. Register the app's exact callback first (`PUT /v3/apps/:appId/oidc`), or the provider refuses the authorization. This is beta: the API ships an integrated provider from 3.6.26, but it serves no `/oidc` routes until an operator configures an issuer and signing keys, so confirm the issuer you pass actually answers discovery before offering it.
 
 A compatible issuer, REST API and registered callback without a fragment are prerequisites. Validate that integration and coordinated SDK publication before offering it to app builders. Notes retains its existing authentication flow; no subject migration is implied.
 

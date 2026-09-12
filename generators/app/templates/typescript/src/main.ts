@@ -1,5 +1,5 @@
 import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage} from "./service-agreement";
-import { FidjNodeService } from "@ofidj/node";
+import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import "./style.css";
 import { showVersionBadge } from "./version";
 
@@ -12,9 +12,13 @@ type Settings = {
   dashboardUrl: string;
   localDemo: boolean;
   releaseVersion: string;
+  oidcIssuer?: string;
 };
 const root = document.querySelector<HTMLDivElement>("#app")!;
 const sdk = new FidjNodeService();
+// When the app is configured with a provider it never sees a password: the
+// entry hands the person to Fidj and gets a code back.
+let oidc: FidjOidcClient | null = null;
 let settings: Settings;
 let session: Session | null = null;
 let notes: Note[] = [];
@@ -90,7 +94,7 @@ function render() {
   <main>${notice ? `<p class="notice" role="status">${escape(notice)}</p>` : ""}${error ? `<p class="error" role="alert">${escape(error)}</p>` : ""}
   ${
     !session
-      ? `<section class="welcome"><div><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>Good ideas<br>start here.</h1><p>Keep your notes together, with access you understand and privacy you control.</p><div class="promise"><img src="/fidj-logo.png" alt=""><span>Your account connects through Fidj.<br>Your choices belong to this app.</span></div></div><form id="signin" class="card"><h2>Welcome to ${escape(settings.title)}</h2><p>Sign in with your Fidj account.</p><label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" value="${escape(signInPassword)}" autocomplete="current-password" required>${agreementMarkup()}<button class="primary" type="submit">Continue</button>${settings.localDemo ? `<div class="demo"><strong>Try the local example</strong><p>Alex owns the app. Maya and Sam start with the Free role.</p><button type="button" data-demo="alex">Alex · owner</button><button type="button" data-demo="maya">Maya · member</button><button type="button" data-demo="sam">Sam · member</button></div>` : ""}</form></section>`
+      ? `<section class="welcome"><div><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>Good ideas<br>start here.</h1><p>Keep your notes together, with access you understand and privacy you control.</p><div class="promise"><img src="/fidj-logo.png" alt=""><span>Your account connects through Fidj.<br>Your choices belong to this app.</span></div></div><form id="signin" class="card"><h2>Welcome to ${escape(settings.title)}</h2>${oidc ? `<p>Continue securely with your Fidj account. Your password stays with Fidj.</p>${agreementMarkup()}<button class="primary" type="submit">Continue with Fidj</button>` : `<p>Sign in with your Fidj account.</p><label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" value="${escape(signInPassword)}" autocomplete="current-password" required>${agreementMarkup()}<button class="primary" type="submit">Continue</button>${settings.localDemo ? `<div class="demo"><strong>Try the local example</strong><p>Alex owns the app. Maya and Sam start with the Free role.</p><button type="button" data-demo="alex">Alex · owner</button><button type="button" data-demo="maya">Maya · member</button><button type="button" data-demo="sam">Sam · member</button></div>` : ""}`}</form></section>`
       : `
   <div class="page-heading"><div><p class="eyebrow">YOUR WORKSPACE</p><h1>A place to think.</h1><p>${escape(session.username)} <span class="roles">${session.roles.map(escape).join(" · ") || "No assigned roles"}</span></p></div><button id="signout">Sign out</button></div>
   <nav><button id="workspace-tab" class="${view === "workspace" ? "selected" : ""}">My notes</button><button id="privacy-tab" class="${view === "privacy" ? "selected" : ""}">My privacy</button><button id="refresh">Refresh access</button></nav>
@@ -115,8 +119,8 @@ function render() {
   void bindAgreement(el<HTMLFormElement>("signin"), settings.title, settings.apiEndpoint, settings.appId, signInAgreementAccepted);
   el<HTMLFormElement>("signin")?.addEventListener("submit", (event) => {
     event.preventDefault();
-    const email = el<HTMLInputElement>("email").value;
-    const password = el<HTMLInputElement>("password").value;
+    const email = el<HTMLInputElement>("email")?.value || "";
+    const password = el<HTMLInputElement>("password")?.value || "";
     signInEmail = email;
     signInPassword = password;
     signInAgreementAccepted = el<HTMLInputElement>("service-agreement").checked;
@@ -127,6 +131,10 @@ function render() {
       return;
     }
     void action(async () => {
+      if (oidc) {
+        window.location.assign(await oidc.beginLogin());
+        return;
+      }
       try {
         await sdk.login(email, password, { autoSignup: false, ...acceptance });
       } catch (reason) {
@@ -251,6 +259,21 @@ async function start() {
   try {
     settings = await (await fetch("/api/config")).json();
     showVersionBadge(settings.releaseVersion, settings.title === "Fidj" ? settings.apiEndpoint : undefined);
+    if (settings.oidcIssuer)
+      oidc = new FidjOidcClient({
+        issuer: settings.oidcIssuer,
+        clientId: settings.appId,
+        redirectUri: window.location.origin + window.location.pathname,
+        apiEndpoint: settings.apiEndpoint,
+        storage: sessionStorage,
+      });
+    // Coming back from Fidj: swap the code for a session, and take the code out
+    // of the address bar before anything can reload it.
+    if (oidc && new URL(window.location.href).searchParams.has("state")) {
+      const callback = new URL(window.location.href);
+      window.history.replaceState(null, "", window.location.pathname);
+      await oidc.completeLogin(callback);
+    }
     await sdk.init(settings.appId, {
       apiEndpoint: settings.apiEndpoint,
       prod: !settings.localDemo,

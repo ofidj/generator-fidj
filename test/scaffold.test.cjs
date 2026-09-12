@@ -201,6 +201,26 @@ test("assembles an explicit application module and preserves its source", () => 
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+// An app with its own backend is the realistic third-party case: it keeps its
+// own data and verifies sessions itself. It needs the provider entry as much as
+// a content app, and its server has to learn the issuer to serve it.
+test("an app with its own backend can sign in through the provider", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "fidj-oidc-app-"));
+  try {
+    const output = scaffold(path.join(root, "app"), {
+      appId: "fidj-example",
+      apiEndpoint: "https://api.example/v3",
+      oidcIssuer: "https://api.example/oidc",
+    });
+    const config = JSON.parse(fs.readFileSync(path.join(output, "app.config.json")));
+    assert.equal(config.oidcIssuer, "https://api.example/oidc");
+    assert.match(
+      fs.readFileSync(path.join(output, ".env.example"), "utf8"),
+      /^FIDJ_OIDC_ISSUER=https:\/\/api\.example\/oidc$/m,
+      "the app server serves the issuer to its own page; without it the entry cannot redirect"
+    );
+  } finally {fs.rmSync(root, {recursive: true, force: true});}
+});
 test("OIDC generation preserves content and rejects an unrelated issuer", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "fidj-oidc-cli-"));
   try {
