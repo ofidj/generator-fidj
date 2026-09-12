@@ -204,6 +204,23 @@ test("assembles an explicit application module and preserves its source", () => 
 // An app with its own backend is the realistic third-party case: it keeps its
 // own data and verifies sessions itself. It needs the provider entry as much as
 // a content app, and its server has to learn the issuer to serve it.
+// A local build points at the loopback API, so it must point at that API's own
+// provider too: the client refuses an issuer on another origin, and a build that
+// silently keeps the hosted issuer sends local sign-ins to production.
+test("a local build uses the local provider, not the hosted one", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "fidj-oidc-local-"));
+  try {
+    const output = scaffold(path.join(root, "app"), {
+      appId: "fidj-example",
+      apiEndpoint: "https://api.example/v3",
+      oidcIssuer: "https://api.example/oidc",
+      local: true,
+    });
+    const config = JSON.parse(fs.readFileSync(path.join(output, "app.config.json")));
+    assert.equal(config.apiEndpoint, "http://localhost:3201/v3");
+    assert.equal(config.oidcIssuer, "http://localhost:3201/oidc");
+  } finally {fs.rmSync(root, {recursive: true, force: true});}
+});
 test("an app with its own backend can sign in through the provider", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "fidj-oidc-app-"));
   try {

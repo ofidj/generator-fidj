@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.10] - 2026-09-13
+
+- Point a `--local` build at the loopback API's own provider. It kept the hosted
+  issuer while the API URL moved to loopback, so the client refused the mismatch
+  and a local build that started anyway would have sent sign-ins to production.
+
 ## [1.0.9] - 2026-09-13
 
 - Offer the provider entry to an app with its own backend, not only to content
