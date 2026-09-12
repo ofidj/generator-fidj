@@ -1,4 +1,4 @@
-import {agreementMarkup, bindAgreement, acceptedAgreement} from "./service-agreement";
+import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage} from "./service-agreement";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
 import "./style.css";
@@ -24,6 +24,9 @@ let message =
 let failed = false;
 let busy = false;
 let leaving = false;
+let signInEmail = "";
+let signInPassword = "";
+let signInAgreementAccepted = false;
 const accountRoutes = ["forgot", "reset", "verify", "account"];
 let linkToken = "";
 let verificationConfirmed = false;
@@ -255,7 +258,7 @@ function render() {
       ? `<div class="signin-intro${config.highlights?.length ? "" : " is-plain"}"><header class="signin-masthead"><img class="app-mark" src="${escape(config.logo)}" alt=""><strong>${escape(config.title)}</strong></header>
   <div class="signin-identity"><h1>${escape(config.welcome)}</h1><p class="signin-description">${escape(config.description)}</p></div>
   ${highlights()}</div>
-  <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin"><label for="email">Email</label><input id="email" type="email" placeholder="you@company.com" autocomplete="username" required><div class="field-head"><label for="password">Password</label><a href="#/forgot">Forgot?</a></div><div class="password-field"><input id="password" type="password" placeholder="••••••••••" autocomplete="current-password" required><button type="button" id="reveal" aria-controls="password">Show</button></div>${agreementMarkup()}<button class="primary" type="submit" disabled>Continue</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button></form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
+  <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin"><label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" placeholder="you@company.com" autocomplete="username" required><div class="field-head"><label for="password">Password</label><a href="#/forgot">Forgot?</a></div><div class="password-field"><input id="password" type="password" value="${escape(signInPassword)}" placeholder="••••••••••" autocomplete="current-password" required><button type="button" id="reveal" aria-controls="password">Show</button></div>${agreementMarkup()}<button class="primary" type="submit">Continue</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button></form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
   <div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>Your account, with Fidj</strong></p><p>Signing in creates one Fidj account you keep across every app that uses Fidj.</p><p>You choose what this app may store — and can export or erase it at any moment.</p></div></div>
   ${badges()}</div>`
       : `
@@ -295,17 +298,30 @@ function render() {
     navigate("content");
   });
   if (oidc && element("signin")) element("signin")!.innerHTML = agreementMarkup() + '<p>Continue securely with your Fidj account. Your password stays with Fidj.</p><button class="primary" type="submit">Continue with Fidj</button>';
-  void bindAgreement(element<HTMLFormElement>("signin"), config.title, config.apiEndpoint, config.appId);
+  void bindAgreement(element<HTMLFormElement>("signin"), config.title, config.apiEndpoint, config.appId, signInAgreementAccepted);
   element<HTMLFormElement>("signin")?.addEventListener("submit", (event) => {
     event.preventDefault();
-    const acceptance = acceptedAgreement(event.currentTarget as HTMLFormElement);
-    if (!acceptance) return;
     const email = element<HTMLInputElement>("email")?.value || "";
     const password = element<HTMLInputElement>("password")?.value || "";
+    const agreement = element<HTMLInputElement>("service-agreement");
+    signInEmail = email;
+    signInPassword = password;
+    signInAgreementAccepted = agreement?.checked === true;
+    const acceptance = acceptedAgreement(event.currentTarget as HTMLFormElement);
+    if (!acceptance) {
+      failed = true;
+      message = "Please accept the service agreement before continuing.";
+      render();
+      return;
+    }
     const signup = (event.submitter as HTMLButtonElement)?.name === "signup";
     void action(async () => {
       if (oidc) {window.location.assign(await oidc.beginLogin()); return;}
-      await sdk.login(email, password, { autoSignup: signup, ...acceptance });
+      try {
+        await sdk.login(email, password, { autoSignup: signup, ...acceptance });
+      } catch (error) {
+        throw new Error(signInErrorMessage(error));
+      }
       await refresh();
       anonymous = false;
       // A new account belongs where a returning one lands: inside the app.

@@ -76,7 +76,8 @@ Run `npm run privacy:rehearse` for an isolated temporary-store HTTP scenario cov
 
 Sign-in and account creation require the unchecked service-agreement checkbox.
 Read the app's current text/version from the dialog before accepting. If the
-agreement cannot load, the form stays blocked. The API records the accepted
+agreement is not accepted, submitting explains the requirement while preserving
+the form; if the agreement cannot load, the form stays blocked. The API records the accepted
 version per app; optional privacy choices are separate. The app owner must replace
 the default demo agreement using the Fidj app's `configurationAsJSON.serviceAgreement`
 (`version` and `text`) before release. No generated-source edit is needed.

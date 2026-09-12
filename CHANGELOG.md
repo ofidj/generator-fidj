@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.0.4] - 2026-09-12
+
+- Replace transport error names with written sign-in guidance, preserve the submitted form after failure, and explain the agreement requirement on submit without hiding disabled actions from keyboard users.
+
 - Require a shared unchecked agreement checkbox on login/signup, with an app-scoped readable agreement and fail-closed loading.
 
 Dated entries are historical; current workflow is in the package README.

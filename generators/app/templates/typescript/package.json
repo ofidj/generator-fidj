@@ -15,7 +15,7 @@
     "privacy:rehearse": "npm run build && node --test test/server.test.mjs"
   },
   "dependencies": {
-    "@ofidj/node": "^3.6.24"
+    "@ofidj/node": "^3.6.26"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
