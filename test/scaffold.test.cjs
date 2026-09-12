@@ -27,6 +27,13 @@ test("generates a standalone typed client and server without private keys", () =
     assert.match(config.releaseVersion, /^\d{2}\.\d{2}\.\d{2}$/);
     assert.match(main, /showVersionBadge/);
     assert.ok(fs.existsSync(path.join(output, "src/version.ts")));
+    const agreement = fs.readFileSync(
+      path.join(output, "src/service-agreement.ts"),
+      "utf8",
+    );
+    assert.match(agreement, /Retry/);
+    assert.match(agreement, /cannot reach Fidj/i);
+    assert.doesNotMatch(agreement, /Reload this page/);
     assert.ok(fs.existsSync(path.join(output, ".gitignore")));
     assert.match(
       fs.readFileSync(path.join(output, ".env.example"), "utf8"),

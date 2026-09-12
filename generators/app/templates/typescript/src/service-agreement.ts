@@ -1,5 +1,5 @@
 export function agreementMarkup() {
-  return `<div class="signin-agreement"><label class="agreement-choice"><input id="service-agreement" type="checkbox" aria-required="true" disabled><span id="agreement-label">I accept the service agreement for this app.</span></label><button type="button" id="read-agreement" disabled>Read service agreement</button><p id="agreement-status" class="fineprint" role="status">Loading service agreement…</p></div><dialog id="agreement-dialog" aria-labelledby="agreement-heading"><h2 id="agreement-heading">Service agreement</h2><p id="agreement-version"></p><p id="agreement-text"></p><button type="button" id="close-agreement">Close agreement</button></dialog>`;
+  return `<div class="signin-agreement"><label class="agreement-choice"><input id="service-agreement" type="checkbox" aria-required="true" disabled><span id="agreement-label">I accept the service agreement for this app.</span></label><button type="button" id="read-agreement" disabled>Read service agreement</button><p id="agreement-status" class="fineprint" role="status">Loading service agreement…</p><button type="button" id="retry-agreement" hidden>Retry</button></div><dialog id="agreement-dialog" aria-labelledby="agreement-heading"><h2 id="agreement-heading">Service agreement</h2><p id="agreement-version"></p><p id="agreement-text"></p><button type="button" id="close-agreement">Close agreement</button></dialog>`;
 }
 
 export function acceptedAgreement(form: HTMLFormElement) {
@@ -24,6 +24,7 @@ export async function bindAgreement(form: HTMLFormElement | null, title: string,
   const read = form.querySelector<HTMLButtonElement>("#read-agreement")!;
   const dialog = form.querySelector<HTMLDialogElement>("#agreement-dialog")!;
   const status = form.querySelector<HTMLElement>("#agreement-status")!;
+  const retry = form.querySelector<HTMLButtonElement>("#retry-agreement")!;
   const submitButtons = form.querySelectorAll<HTMLButtonElement>('button[type="submit"]');
   const update = () => submitButtons.forEach(button => { button.disabled = checkbox.disabled; });
   form.querySelector("#agreement-label")!.textContent = `I accept the service agreement for ${title}.`;
@@ -31,21 +32,31 @@ export async function bindAgreement(form: HTMLFormElement | null, title: string,
   checkbox.addEventListener("change", update);
   read.addEventListener("click", () => dialog.showModal());
   form.querySelector("#close-agreement")!.addEventListener("click", () => dialog.close());
-  try {
-    const response = await fetch(`${endpoint}/apps/${encodeURIComponent(appId)}`, {signal: AbortSignal.timeout(10000)});
-    if (!response.ok) throw new Error("Agreement unavailable");
-    const agreement = (await response.json()).app?.agreement;
-    if (!agreement || typeof agreement.version !== "string" || !agreement.version || typeof agreement.text !== "string" || !agreement.text) throw new Error("Agreement unavailable");
-    if (!form.isConnected) return;
-    checkbox.dataset.version = agreement.version;
-    checkbox.disabled = false;
-    checkbox.checked = checked;
-    read.disabled = false;
-    dialog.querySelector("#agreement-version")!.textContent = `Version ${agreement.version}`;
-    dialog.querySelector("#agreement-text")!.textContent = agreement.text;
-    status.textContent = "Required to sign in. Optional data choices stay separate.";
-    update();
-  } catch {
-    if (form.isConnected) status.textContent = "The service agreement could not be loaded. Reload this page to try again.";
-  }
+  const load = async () => {
+    retry.hidden = true;
+    status.textContent = "Loading service agreement…";
+    try {
+      const response = await fetch(`${endpoint}/apps/${encodeURIComponent(appId)}`, {signal: AbortSignal.timeout(10000)});
+      if (!response.ok) throw new Error(response.status === 404 ? "missing" : "unreachable");
+      const agreement = (await response.json()).app?.agreement;
+      if (!agreement || typeof agreement.version !== "string" || !agreement.version || typeof agreement.text !== "string" || !agreement.text) throw new Error("missing");
+      if (!form.isConnected) return;
+      checkbox.dataset.version = agreement.version;
+      checkbox.disabled = false;
+      checkbox.checked = checked;
+      read.disabled = false;
+      dialog.querySelector("#agreement-version")!.textContent = `Version ${agreement.version}`;
+      dialog.querySelector("#agreement-text")!.textContent = agreement.text;
+      status.textContent = "Required to sign in. Optional data choices stay separate.";
+      update();
+    } catch (error) {
+      if (!form.isConnected) return;
+      status.textContent = error instanceof Error && error.message === "missing"
+        ? "This app has no service agreement available."
+        : "We cannot reach Fidj right now. Try again.";
+      retry.hidden = false;
+    }
+  };
+  retry.addEventListener("click", load);
+  await load();
 }

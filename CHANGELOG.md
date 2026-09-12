@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.7] - 2026-09-12
+
+- Distinguish a missing service agreement from an unavailable Fidj API and let
+  people retry loading it without losing the sign-in form.
+
 ## [1.0.6] - 2026-09-12
 
 - Give every generated app an always-visible bottom-right release date in
