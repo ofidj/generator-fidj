@@ -274,6 +274,14 @@ function startModule() {
   }
 }
 function render() {
+  // Once the mounted app owns the document the shell cannot draw over it, and
+  // its own router will try to match addresses that were never its business.
+  // So any address it does not own means starting the document again — checked
+  // first, because every later branch writes into an element that is gone.
+  if (moduleStarted && !moduleRoute()) {
+    window.location.reload();
+    return;
+  }
   // The provider handed this person here to answer a question. Nothing else
   // this app might want to show belongs on the screen until they have.
   if (interactionId) {
@@ -297,11 +305,6 @@ function render() {
   // does not own is handed over as it stands.
   if (moduleRoute()) {
     startModule();
-    return;
-  }
-  // The mounted app has taken the document; the shell cannot draw over it.
-  if (moduleStarted) {
-    window.location.reload();
     return;
   }
   let route = currentRoute();
@@ -582,9 +585,11 @@ function readInteraction() {
   if (!uid) return false;
   interactionId = uid;
   interactionError = parameters.get("error") || "";
-  // The address is cleaned immediately: the interaction id is single-use and has
-  // no business staying in history or in a shared link.
-  window.history.replaceState(null, "", "#/signin");
+  // The id stays in the address while the screen is up. Taking it out looked
+  // tidier and made the screen a trap: the address became "#/signin", so going
+  // back to "#/signin" changed nothing, the document never reloaded, and the
+  // person stayed on a screen they had asked to leave. It is single-use, it is
+  // where the provider put it, and the form navigates away from it.
   return true;
 }
 
@@ -609,6 +614,13 @@ function interactionScreen() {
     ? `<p role="alert" class="error">${escape(refusals[interactionError] || refusals.refused)}</p>`
     : "";
   const action = new URL(details.action, config.apiEndpoint).href;
+  // A refusal comes back as a redirect, so the typed address would be lost —
+  // and retyping an address is the part a person gets wrong twice. It is kept
+  // in this browser, never in the address: nothing about them travels in a URL.
+  let typed = "";
+  try {
+    typed = sessionStorage.getItem("fidj.interaction.email") || "";
+  } catch {}
   const body =
     details.prompt === "login"
       ? `<h2>Sign in to continue to ${asking}</h2>
@@ -616,7 +628,7 @@ function interactionScreen() {
   ${notice}
   <form method="post" action="${escape(action)}" id="interaction">
     <input type="hidden" name="csrf" value="${escape(details.csrf)}">
-    <label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" required>
+    <label for="email">Email</label><input id="email" name="email" type="email" value="${escape(typed)}" autocomplete="username" required>
     <div class="field-head"><label for="password">Password</label><a href="${escape(config.dashboardUrl)}/#/forgot">Forgot?</a></div>
     <div class="password-field"><input id="password" name="password" type="password" autocomplete="current-password" required><button type="button" id="reveal" aria-controls="password">Show</button></div>
     <button class="primary" type="submit" name="action" value="continue">Sign in</button>
@@ -652,6 +664,13 @@ function interactionScreen() {
     const hidden = field.type === "password";
     field.type = hidden ? "text" : "password";
     button.textContent = hidden ? "Hide" : "Show";
+  });
+  element("interaction")?.addEventListener("submit", () => {
+    const address = element<HTMLInputElement>("email")?.value || "";
+    try {
+      if (address) sessionStorage.setItem("fidj.interaction.email", address);
+      else sessionStorage.removeItem("fidj.interaction.email");
+    } catch {}
   });
 }
 
@@ -741,6 +760,9 @@ void action(async () => {
     const callback = new URL(window.location.href);
     window.history.replaceState(null, "", window.location.pathname + "#/content");
     await oidc.completeLogin(callback);
+    try {
+      sessionStorage.removeItem("fidj.interaction.email");
+    } catch {}
   }
   await sdk.init(config.appId, {
     apiEndpoint: config.apiEndpoint,

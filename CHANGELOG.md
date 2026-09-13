@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.1] - 2026-09-13
+
+- Reload when a mounted app is handed an address it does not own. Checked first
+  in the render, because every later branch writes into an element the mounted
+  app replaced — a hash change from the console to a recovery screen left
+  Angular trying to route it and throwing.
+- Keep the interaction id in the address while the provider's screen is up.
+  Taking it out looked tidier and made the screen a trap: the address became
+  `#/signin`, so going back to `#/signin` changed nothing and the person stayed
+  on a screen they had asked to leave.
+- Keep the typed address across a refusal on that screen. It comes back as a
+  redirect, so the field was emptied — and retyping an address is the part a
+  person gets wrong twice. Kept in the browser, never in the URL.
+
 ## [1.4.0] - 2026-09-13
 
 - Render the provider's sign-in screen. When Fidj's provider hands a person to a
