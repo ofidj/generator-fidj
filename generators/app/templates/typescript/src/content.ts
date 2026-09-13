@@ -293,8 +293,13 @@ function render() {
     return;
   }
   // The provider handed this person here to answer a question. Nothing else
-  // this app might want to show belongs on the screen until they have.
+  // this app might want to show belongs on the screen until they have — the
+  // shell's own header and page margins included: chrome that says "you are
+  // inside the console" reads as furniture from the wrong room above a question
+  // about whether you are anyone at all. Same class the shell's other
+  // standalone screens use, so one rule keeps covering them all.
   if (interactionId) {
+    document.body.classList.add("signin-view");
     if (interactionFailed) {
       root.innerHTML = `<section class="card"><p role="alert" class="error">${escape(message)}</p><p><a href="#/signin">Back to sign in</a></p></section>`;
       return;
@@ -733,7 +738,7 @@ function interactionScreen() {
     <label class="agreement-choice"><input type="checkbox" name="terms" value="true" required><span>I accept ${asking}'s service agreement.</span></label>
     ${details.termsUri ? `<p class="fineprint"><a href="${escape(details.termsUri)}" target="_blank" rel="noopener noreferrer">Service agreement</a>${details.privacyUri ? ` · <a href="${escape(details.privacyUri)}" target="_blank" rel="noopener noreferrer">Privacy notice</a>` : ""}</p>` : ""}
     <button class="primary" type="submit" name="action" value="continue">Allow and continue</button>
-    <button type="button" id="not-me" class="quiet">Not you? Sign in with another account</button>
+    <button class="quiet" type="submit" id="not-me" name="action" value="switch" formnovalidate>Not you? Sign in with another account</button>
     <button class="quiet" type="submit" name="action" value="cancel" formnovalidate>Cancel and go back</button>
   </form>`;
 
@@ -754,16 +759,16 @@ function interactionScreen() {
   });
   // Being recognised is the point, and a dead end when the person is not who
   // Fidj thinks — a shared computer, a second account, somebody else's tab. So
-  // the screen that recognises them asks again on request, which is what
-  // prompt=login means, rather than merely forgetting a remembered address.
+  // the screen that recognises them asks again on request. It goes back to the
+  // provider as this form's own answer, because only the provider can end the
+  // session doing the recognising: starting a fresh request with prompt=login
+  // from here asked once and left that session standing, so the back button,
+  // a reload, or the app's door again met the same face.
   element("not-me")?.addEventListener("click", () => {
     forgetSignIn(config.appId);
     try {
       sessionStorage.removeItem("fidj.interaction.email");
     } catch {}
-    void (async () => {
-      window.location.assign(await oidc!.beginLogin({prompt: "login"}));
-    })();
   });
   element("interaction")?.addEventListener("submit", () => {
     const address = element<HTMLInputElement>("email")?.value || "";
