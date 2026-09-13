@@ -187,8 +187,13 @@ async function action(task: () => Promise<void>) {
     render();
   }
 }
+// A person moving between screens is making history, so push an entry: Back has
+// to return to the screen before, not to whatever preceded the application.
+// Replacing is right everywhere else in this file — stripping a single-use token
+// out of the address, correcting a route the person did not choose, and clearing
+// the sign-in callback — because none of those is a place they navigated to.
 function navigate(route: string) {
-  window.history.replaceState(null, "", "#/" + route);
+  if (route !== currentRoute()) window.history.pushState(null, "", "#/" + route);
   if (!busy) render();
 }
 function moduleRoute() {
@@ -199,19 +204,60 @@ function moduleRoute() {
     ["signin", "content", "privacy", ...accountRoutes].includes(route)
   )
     return null;
-  const target = new URL(config.moduleEntry, window.location.href);
-  target.hash = window.location.hash;
-  return target.href;
+  return route;
+}
+// The mounted app starts inside this document, at this address. It used to be a
+// second document under /module/, which put a generator word in the address bar
+// and reloaded the page in the middle of signing in. Starting it here costs one
+// insertion and is not undone: the app owns the document from then on, and
+// leaving it (signing out) reloads the shell from its own address.
+let moduleStarted = false;
+function startModule() {
+  if (moduleStarted) return;
+  const mount = config.moduleMount as unknown as {
+    styles: string[];
+    scripts: Array<{ src: string; module: boolean }>;
+    markup: string;
+  } | null;
+  if (!mount) return;
+  moduleStarted = true;
+  document.body.classList.add("has-module");
+  // The app takes the whole document, not a corner of the shell's. A built
+  // single-page app positions itself against the body — Ionic, for one, fixes
+  // the body and scrolls inside its own container — so leaving the shell's
+  // header and <main> wrapper around it produces a page that cannot scroll and
+  // a second header above its own.
+  document.body.replaceChildren(
+    new Range().createContextualFragment(mount.markup),
+  );
+  for (const href of mount.styles) {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
+  }
+  for (const script of mount.scripts) {
+    const element = document.createElement("script");
+    if (script.module) element.type = "module";
+    element.src = script.src;
+    document.body.appendChild(element);
+  }
 }
 function render() {
   if (!initialized) {
     root.innerHTML = '<p role="status">Loading your session…</p>';
     return;
   }
-  const applicationRoute = moduleRoute();
-  if (applicationRoute) {
-    root.innerHTML = '<p role="status">Opening your app…</p>';
-    window.location.replace(applicationRoute);
+  // Which of its routes need a session is the mounted app's business, not the
+  // shell's: Fidj's own console serves /pub to anyone. So any address the shell
+  // does not own is handed over as it stands.
+  if (moduleRoute()) {
+    startModule();
+    return;
+  }
+  // The mounted app has taken the document; the shell cannot draw over it.
+  if (moduleStarted) {
+    window.location.reload();
     return;
   }
   let route = currentRoute();

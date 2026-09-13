@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.1.0] - 2026-09-13
+
+- Mount an app at the shell's own address instead of under `/module/`. The
+  mounted app starts inside the shell's document, so its screens read
+  `example.com/#/my/apps` rather than `example.com/module/#/my/apps` — "module"
+  is a generator word with no meaning for the person reading the address bar —
+  and signing in no longer reloads the page halfway through. What is left at the
+  old address forwards, hash and all.
+- Push a history entry when a person moves between screens, so Back returns to
+  the screen before rather than leaving the application. Replacing still happens
+  where nothing was navigated to: stripping a single-use token out of the
+  address, correcting a route the person did not choose, clearing the sign-in
+  callback.
+
 ## [1.0.10] - 2026-09-13
 
 - Point a `--local` build at the loopback API's own provider. It kept the hosted

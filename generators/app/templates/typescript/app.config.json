@@ -6,6 +6,7 @@
   "localDemo": false,
   "allowAnonymous": true,
   "moduleEntry": "",
+  "moduleMount": null,
   "description": "A space to explore, with an account that puts you in control.",
   "highlights": [],
   "badges": [],

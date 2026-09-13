@@ -150,7 +150,7 @@ test("assembles an explicit application module and preserves its source", () => 
   const output = path.join(root, "generated");
   fs.mkdirSync(source);
   const html =
-    '<html><head><base href="/module/"></head><body>Owner console</body></html>';
+    '<html><head><base href="/"><link rel="stylesheet" href="styles.css"></head><body><app-root>Owner console</app-root><script src="main.js" type="module"></script></body></html>';
   fs.writeFileSync(path.join(source, "index.html"), html);
   try {
     scaffold(output, {
@@ -162,13 +162,28 @@ test("assembles an explicit application module and preserves its source", () => 
     const config = JSON.parse(
       fs.readFileSync(path.join(output, "app.config.json")),
     );
-    // A directory, not its index file: no index.html in the address bar.
-    assert.equal(config.moduleEntry, "./module/#/my");
+    // An address inside the shell, not a second document: no "module" in the
+    // address bar, and no page reload in the middle of signing in.
+    assert.equal(config.moduleEntry, "#/my");
+    assert.deepEqual(config.moduleMount.styles, ["module/styles.css"]);
+    assert.deepEqual(config.moduleMount.scripts, [
+      { src: "module/main.js", module: true },
+    ]);
+    assert.match(config.moduleMount.markup, /<app-root>/);
     assert.equal(config.content, "");
     assert.equal(config.allowAnonymous, false);
+    // What is left at the old address forwards the person, hash and all.
+    const stub = fs.readFileSync(
+      path.join(output, "public/module/index.html"),
+      "utf8",
+    );
+    assert.match(stub, /<script src="moved\.js">/);
+    assert.match(stub, /noindex/);
+    // Inline scripts are refused by the generated CSP, so the forward is a file.
+    assert.doesNotMatch(stub, /<script>/);
     assert.match(
-      fs.readFileSync(path.join(output, "public/module/index.html"), "utf8"),
-      /name="fidj-signin" content="..\/#\/signin"/,
+      fs.readFileSync(path.join(output, "public/module/moved.js"), "utf8"),
+      /location\.replace\(to\)/,
     );
     assert.equal(
       fs.readFileSync(path.join(source, "index.html"), "utf8"),

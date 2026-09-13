@@ -474,6 +474,12 @@ body.signin-view main {
   margin: 0;
   padding: 0;
 }
+/* A mounted app takes the document: the shell removes its own chrome rather
+ * than hiding it, so nothing of the shell's layout reaches the app. The class
+ * stays as the hook for anything an app's own stylesheet wants to key on. */
+body.has-module {
+  margin: 0;
+}
 /* The sign-in entry: ink panel carrying the app's identity, paper panel
  * carrying the form. It stacks below 860px, ink first. */
 .signin-shell {
