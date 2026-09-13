@@ -443,7 +443,10 @@ function render() {
 
   // Forgetting the address it remembered and handing the person back to a
   // session it never ended would recognise them again: the offer has to reach
-  // the provider, not just this browser's memory.
+  // the provider, not just this browser's memory. Asking for re-authentication
+  // is how it says so, and the provider reads it as this person saying they are
+  // not the one it knows — it ends that session when it hands the screen over,
+  // so walking away from the form does not hand the old face back.
   element("forget-hint")?.addEventListener("click", () => {
     forgetSignIn(config.appId);
     if (oidc) {
