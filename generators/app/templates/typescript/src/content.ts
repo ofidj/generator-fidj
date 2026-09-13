@@ -467,17 +467,21 @@ function render() {
     signInPassword = password;
     signInAgreementAccepted = agreement?.checked === true;
     const acceptance = acceptedAgreement(event.currentTarget as HTMLFormElement);
-    if (!acceptance) {
-      failed = true;
-      message = "Please accept the service agreement before continuing.";
-      render();
-      return;
-    }
     const submitter = event.submitter as HTMLButtonElement | null;
     const signup = submitter?.name === "signup";
     // Which door was used. The Fidj one leaves for the provider; the credential
     // one signs in here, which is why it is the app's own form and not Fidj's.
     const throughFidj = submitter?.name === "entry" && submitter.value === "fidj";
+    // Only the credential door is gated here. The Fidj one is about to be asked
+    // the same question on the screen that names this app, where the answer is
+    // recorded with its version — so asking first cost a second click and kept
+    // nothing.
+    if (!throughFidj && !acceptance) {
+      failed = true;
+      message = "Please accept the service agreement before continuing.";
+      render();
+      return;
+    }
     void action(async () => {
       if (oidc && throughFidj) {window.location.assign(await oidc.beginLogin()); return;}
       if (oidc && (!email || !password)) {

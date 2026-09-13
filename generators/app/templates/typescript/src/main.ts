@@ -137,9 +137,14 @@ function render() {
     const password = el<HTMLInputElement>("password")?.value || "";
     signInEmail = email;
     signInPassword = password;
-    signInAgreementAccepted = el<HTMLInputElement>("service-agreement").checked;
+    signInAgreementAccepted =
+      el<HTMLInputElement>("service-agreement")?.checked === true;
     const acceptance = acceptedAgreement(event.currentTarget as HTMLFormElement);
-    if (!acceptance) {
+    // Only a credential entry is gated here. When Fidj is the door, it asks for
+    // this app's agreement a moment later, on the screen that names the app,
+    // and records the acceptance with its version — so asking first cost a
+    // second click and kept nothing.
+    if (!oidc && !acceptance) {
       error = "Please accept the service agreement before continuing.";
       render();
       return;

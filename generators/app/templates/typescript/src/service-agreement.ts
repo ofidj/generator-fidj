@@ -20,7 +20,10 @@ export function signInErrorMessage(error: unknown) {
 
 export async function bindAgreement(form: HTMLFormElement | null, title: string, endpoint: string, appId: string, checked = false) {
   if (!form) return;
-  const checkbox = form.querySelector<HTMLInputElement>("#service-agreement")!;
+  // An app whose only door is Fidj carries no agreement block: Fidj asks for
+  // this app's agreement on the screen that names it, and records the version.
+  const checkbox = form.querySelector<HTMLInputElement>("#service-agreement");
+  if (!checkbox) return;
   const read = form.querySelector<HTMLButtonElement>("#read-agreement")!;
   const dialog = form.querySelector<HTMLDialogElement>("#agreement-dialog")!;
   const status = form.querySelector<HTMLElement>("#agreement-status")!;
@@ -130,7 +133,10 @@ export function providerEntry(
   const fidj = hint
     ? `<button class="primary" type="submit" name="entry" value="fidj">Continue as ${escapeText(hint)}</button><button type="button" id="forget-hint" class="quiet">Use a different account</button>`
     : `<button class="${both ? "secondary" : "primary"}" type="submit" name="entry" value="fidj">${isFidjItself ? "Sign in" : "Sign in with Fidj"}</button>`;
-  if (!both) return lead + agreementMarkup() + fidj;
+  // Fidj is the only door: it collects the agreement itself, a moment later, on
+  // the screen that names the app — and records it with its version. Collecting
+  // it here first recorded nothing and asked the same question twice.
+  if (!both) return lead + fidj;
   // Both doors. A remembered address puts Fidj first because it is one tap; no
   // memory puts the form first, because that is what the person came to do.
   const divider = `<div class="signin-divider"><span>or</span></div>`;
