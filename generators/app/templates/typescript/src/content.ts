@@ -220,6 +220,12 @@ function navigate(route: string) {
   if (route !== currentRoute()) window.history.pushState(null, "", "#/" + route);
   if (!busy) render();
 }
+// The credential fields, in one place because the entry now shows them beside
+// the Fidj door rather than instead of it.
+function credentialFields() {
+  return `<label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" placeholder="you@company.com" autocomplete="username"><div class="field-head"><label for="password">Password</label><a href="#/forgot">Forgot?</a></div><div class="password-field"><input id="password" type="password" value="${escape(signInPassword)}" placeholder="••••••••••" autocomplete="current-password"><button type="button" id="reveal" aria-controls="password">Show</button></div><button class="primary" type="submit" name="entry" value="credentials">Continue</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button>`;
+}
+
 function moduleRoute() {
   const route = window.location.hash.slice(2).split("?")[0];
   if (
@@ -370,7 +376,11 @@ function render() {
     navigate("content");
   });
   if (oidc && element("signin"))
-    element("signin")!.innerHTML = providerEntry(config.title, config.appId);
+    element("signin")!.innerHTML = providerEntry(
+      config.title,
+      config.appId,
+      config.ownCredentials ? credentialFields() : "",
+    );
   element("forget-hint")?.addEventListener("click", () => {
     forgetSignIn(config.appId);
     render();
@@ -391,9 +401,16 @@ function render() {
       render();
       return;
     }
-    const signup = (event.submitter as HTMLButtonElement)?.name === "signup";
+    const submitter = event.submitter as HTMLButtonElement | null;
+    const signup = submitter?.name === "signup";
+    // Which door was used. The Fidj one leaves for the provider; the credential
+    // one signs in here, which is why it is the app's own form and not Fidj's.
+    const throughFidj = submitter?.name === "entry" && submitter.value === "fidj";
     void action(async () => {
-      if (oidc) {window.location.assign(await oidc.beginLogin()); return;}
+      if (oidc && throughFidj) {window.location.assign(await oidc.beginLogin()); return;}
+      if (oidc && (!email || !password)) {
+        throw new Error("Enter your email and password, or sign in with Fidj.");
+      }
       try {
         await sdk.login(email, password, { autoSignup: signup, ...acceptance });
       } catch (error) {

@@ -94,7 +94,21 @@ export function forgetSignIn(appId: string) {
   } catch {}
 }
 
-export function providerEntry(title: string, appId: string) {
+// Both doors, not one. An app that delegates to Fidj still has people who would
+// rather type an address and a password than be sent somewhere, and people Fidj
+// already recognises who should not have to. So the entry offers the credential
+// form and the Fidj entry together, and leads with whichever fits what this
+// browser knows: a remembered address puts Fidj first, no memory puts the form
+// first.
+//
+// The trade-off is stated where it is made: on this path the app's own page
+// handles the Fidj password, so it is the app — not only Fidj — that must be
+// trusted with it. The Fidj entry beside it never is.
+export function providerEntry(
+  title: string,
+  appId: string,
+  credentials: string,
+) {
   const escapeText = (value: unknown) =>
     String(value ?? "").replace(
       /[&<>"']/g,
@@ -104,11 +118,20 @@ export function providerEntry(title: string, appId: string) {
         ]!,
     );
   const hint = signInHint(appId);
+  const both = Boolean(credentials);
   const lead = hint
-    ? `<p class="signin-lead">You signed in here with Fidj before. ${escapeText(title)} accounts are Fidj accounts, and this site never sees your password — you can also create or use another one.</p>`
-    : `<p class="signin-lead">${escapeText(title)} accounts are Fidj accounts. You will sign in — or create yours — on Fidj's own page, so this site never sees your password.</p>`;
-  const action = hint
-    ? `<button class="primary" type="submit">Continue as ${escapeText(hint)}</button><button type="button" id="forget-hint" class="quiet">Use a different account</button>`
-    : `<button class="primary" type="submit">Sign in with Fidj</button>`;
-  return lead + agreementMarkup() + action;
+    ? `<p class="signin-lead">You signed in here with Fidj before. ${escapeText(title)} accounts are Fidj accounts — continue as yourself, or use another.</p>`
+    : both
+      ? `<p class="signin-lead">${escapeText(title)} accounts are Fidj accounts. Sign in below, or let Fidj do it on its own page — where this site never sees your password.</p>`
+      : `<p class="signin-lead">${escapeText(title)} accounts are Fidj accounts. You will sign in — or create yours — on Fidj's own page, so this site never sees your password.</p>`;
+  const fidj = hint
+    ? `<button class="primary" type="submit" name="entry" value="fidj">Continue as ${escapeText(hint)}</button><button type="button" id="forget-hint" class="quiet">Use a different account</button>`
+    : `<button class="${both ? "secondary" : "primary"}" type="submit" name="entry" value="fidj">Sign in with Fidj</button>`;
+  if (!both) return lead + agreementMarkup() + fidj;
+  // Both doors. A remembered address puts Fidj first because it is one tap; no
+  // memory puts the form first, because that is what the person came to do.
+  const divider = `<div class="signin-divider"><span>or</span></div>`;
+  return hint
+    ? lead + agreementMarkup() + fidj + divider + credentials
+    : lead + agreementMarkup() + credentials + divider + fidj;
 }

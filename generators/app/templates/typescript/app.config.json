@@ -5,6 +5,7 @@
   "title": "My app",
   "localDemo": false,
   "allowAnonymous": true,
+  "ownCredentials": false,
   "moduleEntry": "",
   "moduleMount": null,
   "description": "A space to explore, with an account that puts you in control.",

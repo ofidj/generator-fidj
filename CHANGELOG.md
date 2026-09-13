@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.0] - 2026-09-13
+
+- Add `--credentials true` so an app that delegates to the provider may also
+  offer its own email and password, beside the Fidj door rather than instead of
+  it. Off by default: an app that says nothing still collects no password, which
+  is the promise its entry makes. Where it is on, the app — not only Fidj — is
+  trusted with the credential, and the entry leads with the form for a stranger
+  and with Fidj for a browser that has been here before.
+
 ## [1.2.0] - 2026-09-13
 
 - Say where the account lives before offering the button. "Continue with Fidj"
