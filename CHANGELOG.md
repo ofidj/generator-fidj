@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.1] - 2026-09-13
+
+- Accept `--credentials` on the `create-fidj` command too. 1.3.0 added it to the
+  Yeoman generator alone; the parity test between the two entry points is what
+  said so.
+
 ## [1.3.0] - 2026-09-13
 
 - Add `--credentials true` so an app that delegates to the provider may also

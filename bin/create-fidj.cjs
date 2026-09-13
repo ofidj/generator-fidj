@@ -18,6 +18,7 @@ try {
       logo: { type: "string" },
       favicon: { type: "string" },
       anonymous: { type: "string" },
+      credentials: { type: "string" },
       domain: { type: "string" },
       module: { type: "string" },
       "module-entry": { type: "string" },
@@ -28,7 +29,7 @@ try {
   });
   if (values.help || positionals.length !== 1) {
     console.log(
-      "Usage: create-fidj <directory> --app-id <fidjId> [--api-endpoint <url>] [--title <text> --welcome <text> --description <text> --content <html> --domain <hostname>] [--highlight '<heading>|<body>' ...] [--badge <text> ...] [--logo <image>] [--favicon <image>] [--module <built-directory> --module-entry <index.html#/route>] [--oidc-issuer https://api.example/oidc] [--anonymous true|false] [--local] [--replace]",
+      "Usage: create-fidj <directory> --app-id <fidjId> [--api-endpoint <url>] [--title <text> --welcome <text> --description <text> --content <html> --domain <hostname>] [--highlight '<heading>|<body>' ...] [--badge <text> ...] [--logo <image>] [--favicon <image>] [--module <built-directory> --module-entry <index.html#/route>] [--oidc-issuer https://api.example/oidc] [--anonymous true|false] [--credentials true|false] [--local] [--replace]",
     );
     process.exitCode = values.help ? 0 : 1;
   } else {
@@ -46,6 +47,7 @@ try {
       logo: values.logo,
       favicon: values.favicon,
       anonymous: values.anonymous,
+      credentials: values.credentials,
       domain: values.domain,
       module: values.module,
       moduleEntry: values["module-entry"],
