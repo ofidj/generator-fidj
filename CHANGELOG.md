@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.0] - 2026-09-13
+
+- Stop offering to sign in with Fidj to somebody standing on Fidj. An app that
+  is not Fidj still names it, because there the label points somewhere; on
+  Fidj's own front end it named a provider the person was already in, and the
+  explanation beside it described this site as if it were somewhere else. The
+  front end is told apart by the one fact it already carries — the dashboard it
+  points people to is itself.
+
 ## [1.4.2] - 2026-09-13
 
 - Leave the provider's screen when the address does. Going from

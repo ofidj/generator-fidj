@@ -108,6 +108,7 @@ export function providerEntry(
   title: string,
   appId: string,
   credentials: string,
+  isFidjItself = false,
 ) {
   const escapeText = (value: unknown) =>
     String(value ?? "").replace(
@@ -123,10 +124,12 @@ export function providerEntry(
     ? `<p class="signin-lead">You signed in here with Fidj before. ${escapeText(title)} accounts are Fidj accounts — continue as yourself, or use another.</p>`
     : both
       ? `<p class="signin-lead">${escapeText(title)} accounts are Fidj accounts. Sign in below, or let Fidj do it on its own page — where this site never sees your password.</p>`
-      : `<p class="signin-lead">${escapeText(title)} accounts are Fidj accounts. You will sign in — or create yours — on Fidj's own page, so this site never sees your password.</p>`;
+      : isFidjItself
+        ? `<p class="signin-lead">One account across every app that uses Fidj, and a separate set of choices for each one. Sign in, or create yours, on the next screen.</p>`
+        : `<p class="signin-lead">${escapeText(title)} accounts are Fidj accounts. You will sign in — or create yours — on Fidj's own page, so this site never sees your password.</p>`;
   const fidj = hint
     ? `<button class="primary" type="submit" name="entry" value="fidj">Continue as ${escapeText(hint)}</button><button type="button" id="forget-hint" class="quiet">Use a different account</button>`
-    : `<button class="${both ? "secondary" : "primary"}" type="submit" name="entry" value="fidj">Sign in with Fidj</button>`;
+    : `<button class="${both ? "secondary" : "primary"}" type="submit" name="entry" value="fidj">${isFidjItself ? "Sign in" : "Sign in with Fidj"}</button>`;
   if (!both) return lead + agreementMarkup() + fidj;
   // Both doors. A remembered address puts Fidj first because it is one tap; no
   // memory puts the form first, because that is what the person came to do.

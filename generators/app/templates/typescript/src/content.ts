@@ -407,7 +407,9 @@ function render() {
       config.title,
       config.appId,
       config.ownCredentials ? credentialFields() : "",
+      isFidjItself,
     );
+
   element("forget-hint")?.addEventListener("click", () => {
     forgetSignIn(config.appId);
     render();
@@ -588,6 +590,17 @@ const refusals: Record<string, string> = {
   refused: "That could not be completed. Please try again.",
 };
 
+// Fidj's own front end, told apart by the one fact it already carries: the
+// dashboard it points people to is itself. "Sign in with Fidj" is the right
+// label on an app that is not Fidj; here it names a provider the person is
+// standing in, and hides the form behind a click that only fetches it.
+const isFidjItself = (() => {
+  try {
+    return new URL(config.dashboardUrl).origin === window.location.origin;
+  } catch {
+    return false;
+  }
+})();
 function addressedInteraction() {
   const query = window.location.hash.slice(2).split("?")[1] || "";
   return new URLSearchParams(query).get("interaction") || "";
