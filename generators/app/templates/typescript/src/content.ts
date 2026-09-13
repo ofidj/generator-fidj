@@ -274,6 +274,20 @@ function startModule() {
   }
 }
 function render() {
+  // The provider handed this person here to answer a question. Nothing else
+  // this app might want to show belongs on the screen until they have.
+  if (interactionId) {
+    if (interactionFailed) {
+      root.innerHTML = `<section class="card"><p role="alert" class="error">${escape(message)}</p><p><a href="#/signin">Back to sign in</a></p></section>`;
+      return;
+    }
+    if (!interaction) {
+      root.innerHTML = '<p role="status">Loading…</p>';
+      return;
+    }
+    interactionScreen();
+    return;
+  }
   if (!initialized) {
     root.innerHTML = '<p role="status">Loading your session…</p>';
     return;
@@ -519,6 +533,128 @@ function accountForm(route: string) {
           : `<h2>My Fidj account</h2><p>Your identity is shared across your apps. Privacy choices remain separate for each app.</p><p id="verification-status">${emailVerified ? "Your email address is verified." : "Your email is not verified yet."}</p><button id="check-verification">Refresh verification status</button>${emailVerified ? "" : '<button id="resend-verification">Send verification email</button>'}<p><a href="#/forgot">Reset my password</a></p><button id="continue-app" class="primary">Continue to ${escape(config.title)}</button>`;
 }
 
+
+// ------------------------------------------------ signing in, for the provider
+//
+// When Fidj's provider needs a person to identify themselves it hands them to a
+// Fidj front end — this one — rather than serving a page of its own. So this
+// screen belongs to the provider's conversation, not to this app's: it says who
+// is asking, collects what is being asked for, and posts it straight back.
+//
+// The post is a real form navigation, not a fetch: the provider answers with a
+// redirect that carries the person onward through the authorization, and only a
+// navigation can follow it. The single-use token comes from the context call,
+// which is the only thing that reads the interaction cookie.
+type Interaction = {
+  prompt: string;
+  csrf: string;
+  app: { id: string; title: string; description: string };
+  scopes: string[];
+  termsUri: string;
+  privacyUri: string;
+  action: string;
+};
+let interactionId = "";
+let interactionError = "";
+let interaction: Interaction | null = null;
+let interactionFailed = false;
+
+const scopeMeaning: Record<string, string> = {
+  openid: "An identity specific to this app",
+  profile: "Your display name",
+  email: "Your email and verification status",
+  offline_access: "Stay signed in",
+  "fidj:api": "Use Fidj account and privacy services for this app",
+};
+
+const refusals: Record<string, string> = {
+  credentials: "We could not sign you in. Check your email and password.",
+  signup:
+    "Could not create an account. Use a valid email and a password of at least 12 characters, or sign in to your existing account.",
+  agreement: "Accept the app's service agreement to continue.",
+  refused: "That could not be completed. Please try again.",
+};
+
+function readInteraction() {
+  const query = window.location.hash.slice(2).split("?")[1] || "";
+  const parameters = new URLSearchParams(query);
+  const uid = parameters.get("interaction") || "";
+  if (!uid) return false;
+  interactionId = uid;
+  interactionError = parameters.get("error") || "";
+  // The address is cleaned immediately: the interaction id is single-use and has
+  // no business staying in history or in a shared link.
+  window.history.replaceState(null, "", "#/signin");
+  return true;
+}
+
+async function loadInteraction() {
+  const endpoint = new URL(
+    `/oidc/interaction/${encodeURIComponent(interactionId)}/context`,
+    config.apiEndpoint,
+  );
+  const response = await fetch(endpoint.href, {
+    credentials: "include",
+    headers: {Accept: "application/json"},
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok) throw new Error("This sign-in has expired. Start again from the app.");
+  interaction = (await response.json()) as Interaction;
+}
+
+function interactionScreen() {
+  const details = interaction!;
+  const asking = escape(details.app.title);
+  const notice = interactionError
+    ? `<p role="alert" class="error">${escape(refusals[interactionError] || refusals.refused)}</p>`
+    : "";
+  const action = new URL(details.action, config.apiEndpoint).href;
+  const body =
+    details.prompt === "login"
+      ? `<h2>Sign in to continue to ${asking}</h2>
+  <p class="signin-lead">This is Fidj, the account behind ${asking}. One account, and separate choices for every app that uses it — ${asking} never sees your password.</p>
+  ${notice}
+  <form method="post" action="${escape(action)}" id="interaction">
+    <input type="hidden" name="csrf" value="${escape(details.csrf)}">
+    <label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" required>
+    <div class="field-head"><label for="password">Password</label><a href="${escape(config.dashboardUrl)}/#/forgot">Forgot?</a></div>
+    <div class="password-field"><input id="password" name="password" type="password" autocomplete="current-password" required><button type="button" id="reveal" aria-controls="password">Show</button></div>
+    <button class="primary" type="submit" name="action" value="continue">Sign in</button>
+    <button class="secondary" type="submit" name="action" value="signup">Create a Fidj account</button>
+    <button class="quiet" type="submit" name="action" value="cancel" formnovalidate>Cancel and go back</button>
+  </form>`
+      : `<h2>Continue to ${asking}</h2>
+  <p class="signin-lead">${asking} is asking for the information below. Optional privacy choices stay separate, and you can change them in Fidj at any time.</p>
+  ${notice}
+  <ul class="scope-list">${details.scopes
+    .filter((scope) => scopeMeaning[scope])
+    .map((scope) => `<li>${escape(scopeMeaning[scope])}</li>`)
+    .join("")}</ul>
+  <form method="post" action="${escape(action)}" id="interaction">
+    <input type="hidden" name="csrf" value="${escape(details.csrf)}">
+    <label class="agreement-choice"><input type="checkbox" name="terms" value="true" required><span>I accept ${asking}'s service agreement.</span></label>
+    ${details.termsUri ? `<p class="fineprint"><a href="${escape(details.termsUri)}" target="_blank" rel="noopener noreferrer">Service agreement</a>${details.privacyUri ? ` · <a href="${escape(details.privacyUri)}" target="_blank" rel="noopener noreferrer">Privacy notice</a>` : ""}</p>` : ""}
+    <button class="primary" type="submit" name="action" value="continue">Allow and continue</button>
+    <button class="quiet" type="submit" name="action" value="cancel" formnovalidate>Cancel and go back</button>
+  </form>`;
+
+  root.innerHTML = `<section class="signin-shell"><div class="signin-intro is-plain"><header class="signin-masthead"><img class="app-mark" src="${escape(config.logo)}" alt=""><strong>${escape(config.title)}</strong></header>
+  <div class="signin-identity"><h1>Your identity.<br>Your choices.</h1><p class="signin-description">One account across every app that uses Fidj, and a separate set of choices for each one.</p></div>
+  ${highlights()}</div>
+  <div class="signin-form"><div>${body}</div>
+  <div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>What Fidj is</strong></p><p>Fidj holds your account so each app does not have to. You can see every app you use, what it holds, and take it back — at any time.</p></div></div>
+  ${badges()}</section>`;
+
+  element("reveal")?.addEventListener("click", () => {
+    const field = element<HTMLInputElement>("password");
+    const button = element("reveal");
+    if (!field || !button) return;
+    const hidden = field.type === "password";
+    field.type = hidden ? "text" : "password";
+    button.textContent = hidden ? "Hide" : "Show";
+  });
+}
+
 function renderAccount(route: string) {
   root.innerHTML = `<section class="signin-shell"><div class="signin-intro is-plain"><header class="signin-masthead"><img class="app-mark" src="${escape(config.logo)}" alt=""><strong>${escape(config.title)}</strong></header>
   <div class="signin-identity"><h1>Your account.<br>Your control.</h1><p class="signin-description">Secure access to the apps you use, with one Fidj identity.</p></div>
@@ -586,7 +722,21 @@ function wireAccount(route: string) {
 }
 window.addEventListener("hashchange", render);
 render();
+if (readInteraction()) {
+  render();
+  void loadInteraction()
+    .catch((error) => {
+      interactionFailed = true;
+      failed = true;
+      message =
+        error instanceof Error
+          ? error.message
+          : "This sign-in could not be loaded. Start again from the app.";
+    })
+    .finally(render);
+}
 void action(async () => {
+  if (interactionId) return;
   if (oidc && new URL(window.location.href).searchParams.has("state")) {
     const callback = new URL(window.location.href);
     window.history.replaceState(null, "", window.location.pathname + "#/content");

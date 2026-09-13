@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.4.0] - 2026-09-13
+
+- Render the provider's sign-in screen. When Fidj's provider hands a person to a
+  front end (`FIDJ_INTERACTION_UI` on the API), the generated shell now shows
+  that screen: it names the app asking, says what Fidj is, collects the
+  credential or the approval, and posts it straight back — a real form
+  navigation, because the provider answers with a redirect that carries the
+  person onward. The interaction id is single-use and leaves the address bar at
+  once.
+
 ## [1.3.1] - 2026-09-13
 
 - Accept `--credentials` on the `create-fidj` command too. 1.3.0 added it to the
