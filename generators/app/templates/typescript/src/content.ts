@@ -409,6 +409,32 @@ function render() {
       config.ownCredentials ? credentialFields() : "",
       isFidjItself,
     );
+  // On Fidj itself there is nobody to hand the person to, so the credential
+  // screen is fetched straight away: what they see is the form, or their name.
+  // Once per document, and never once the provider has already answered — a
+  // refusal or a cancellation must not bounce them round again.
+  if (
+    oidc &&
+    isFidjItself &&
+    // Only from the sign-in screen. Without this it fired on every render where
+    // nobody was signed in — including the recovery screens, so a person opening
+    // a password-reset link was handed a sign-in form instead of the reset they
+    // had asked for, and could never finish.
+    element("signin") &&
+    !askedProvider &&
+    !interactionId &&
+    !signedIn &&
+    // Nor when the shell has something to say. A password reset ends on this
+    // screen with "your password has been changed"; leaving for the provider
+    // would swallow the one confirmation the person was waiting for.
+    !message
+  ) {
+    askedProvider = true;
+    void (async () => {
+      if (!(await providerRendersHere())) return;
+      window.location.assign(await oidc.beginLogin());
+    })();
+  }
 
   element("forget-hint")?.addEventListener("click", () => {
     forgetSignIn(config.appId);
@@ -594,6 +620,25 @@ const refusals: Record<string, string> = {
 // dashboard it points people to is itself. "Sign in with Fidj" is the right
 // label on an app that is not Fidj; here it names a provider the person is
 // standing in, and hides the form behind a click that only fetches it.
+let askedProvider = false;
+// Whether the provider renders its sign-in on this front end. A deployment
+// decides that, so the shell asks rather than assumes: hopping to a provider
+// that answers with its own page would land the person on the API's origin,
+// which is the thing this is meant to avoid.
+let signinOnThisUi: boolean | null = null;
+async function providerRendersHere() {
+  if (signinOnThisUi !== null) return signinOnThisUi;
+  try {
+    const response = await fetch(
+      new URL("status", config.apiEndpoint.replace(/\/?$/, "/")).href,
+      {signal: AbortSignal.timeout(5000)},
+    );
+    signinOnThisUi = response.ok && (await response.json()).signin === "fidj-ui";
+  } catch {
+    signinOnThisUi = false;
+  }
+  return signinOnThisUi;
+}
 const isFidjItself = (() => {
   try {
     return new URL(config.dashboardUrl).origin === window.location.origin;
@@ -649,10 +694,14 @@ function interactionScreen() {
   try {
     typed = sessionStorage.getItem("fidj.interaction.email") || "";
   } catch {}
+  // Fidj signing into Fidj: saying "the account behind fidj" and "fidj never
+  // sees your password" about itself is nonsense in the same family as offering
+  // to sign in with Fidj on Fidj.
+  const itself = details.app.id === config.appId;
   const body =
     details.prompt === "login"
-      ? `<h2>Sign in to continue to ${asking}</h2>
-  <p class="signin-lead">This is Fidj, the account behind ${asking}. One account, and separate choices for every app that uses it — ${asking} never sees your password.</p>
+      ? `<h2>${itself ? "Sign in to Fidj" : "Sign in to continue to " + asking}</h2>
+  <p class="signin-lead">${itself ? "One account across every app that uses Fidj, and a separate set of choices for each one." : `This is Fidj, the account behind ${asking}. One account, and separate choices for every app that uses it — ${asking} never sees your password.`}</p>
   ${notice}
   <form method="post" action="${escape(action)}" id="interaction">
     <input type="hidden" name="csrf" value="${escape(details.csrf)}">
@@ -663,8 +712,8 @@ function interactionScreen() {
     <button class="secondary" type="submit" name="action" value="signup">Create a Fidj account</button>
     <button class="quiet" type="submit" name="action" value="cancel" formnovalidate>Cancel and go back</button>
   </form>`
-      : `<h2>Continue to ${asking}</h2>
-  <p class="signin-lead">${asking} is asking for the information below. Optional privacy choices stay separate, and you can change them in Fidj at any time.</p>
+      : `<h2>${itself ? "Continue to Fidj" : "Continue to " + asking}</h2>
+  <p class="signin-lead">${itself ? "Fidj is asking for the information below. Optional privacy choices stay separate for every app, including this one." : `${asking} is asking for the information below. Optional privacy choices stay separate, and you can change them in Fidj at any time.`}</p>
   ${notice}
   <ul class="scope-list">${details.scopes
     .filter((scope) => scopeMeaning[scope])

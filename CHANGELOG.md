@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.6.0] - 2026-09-13
+
+- Fetch the credential screen on Fidj's own front end instead of offering a
+  button to fetch it. Where the provider renders its sign-in here — the shell
+  asks `/v3/status` rather than assuming — somebody arriving at Fidj sees the
+  form, or their own name, and never an address that is not Fidj's.
+- Only from the sign-in screen, and never over a message. Fired on every render
+  where nobody was signed in, it handed a person opening a password-reset link a
+  sign-in form instead, and swallowed the "your password has been changed" that
+  the reset ends on.
+- Stop Fidj introducing itself as a third party to itself: no "the account
+  behind fidj", no "fidj never sees your password", when the app being signed
+  into is Fidj.
+
 ## [1.5.0] - 2026-09-13
 
 - Stop offering to sign in with Fidj to somebody standing on Fidj. An app that
