@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.7.0] - 2026-09-13
+
+- Offer a way out of being recognised. A live Fidj session means the screen asks
+  for consent and not a password, which is the point — and a dead end for
+  somebody who is not who Fidj thinks: a shared computer, a second account,
+  another person's tab. **Not you? Sign in with another account** asks again.
+- Make an app's "Use a different account" mean it. It forgot the address this
+  browser remembered and handed the person back to a session it never ended,
+  which recognised them again; it now reaches the provider.
+
 ## [1.6.0] - 2026-09-13
 
 - Fetch the credential screen on Fidj's own front end instead of offering a

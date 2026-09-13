@@ -436,8 +436,17 @@ function render() {
     })();
   }
 
+  // Forgetting the address it remembered and handing the person back to a
+  // session it never ended would recognise them again: the offer has to reach
+  // the provider, not just this browser's memory.
   element("forget-hint")?.addEventListener("click", () => {
     forgetSignIn(config.appId);
+    if (oidc) {
+      void (async () => {
+        window.location.assign(await oidc.beginLogin({prompt: "login"}));
+      })();
+      return;
+    }
     render();
   });
   void bindAgreement(element<HTMLFormElement>("signin"), config.title, config.apiEndpoint, config.appId, signInAgreementAccepted);
@@ -724,6 +733,7 @@ function interactionScreen() {
     <label class="agreement-choice"><input type="checkbox" name="terms" value="true" required><span>I accept ${asking}'s service agreement.</span></label>
     ${details.termsUri ? `<p class="fineprint"><a href="${escape(details.termsUri)}" target="_blank" rel="noopener noreferrer">Service agreement</a>${details.privacyUri ? ` · <a href="${escape(details.privacyUri)}" target="_blank" rel="noopener noreferrer">Privacy notice</a>` : ""}</p>` : ""}
     <button class="primary" type="submit" name="action" value="continue">Allow and continue</button>
+    <button type="button" id="not-me" class="quiet">Not you? Sign in with another account</button>
     <button class="quiet" type="submit" name="action" value="cancel" formnovalidate>Cancel and go back</button>
   </form>`;
 
@@ -741,6 +751,19 @@ function interactionScreen() {
     const hidden = field.type === "password";
     field.type = hidden ? "text" : "password";
     button.textContent = hidden ? "Hide" : "Show";
+  });
+  // Being recognised is the point, and a dead end when the person is not who
+  // Fidj thinks — a shared computer, a second account, somebody else's tab. So
+  // the screen that recognises them asks again on request, which is what
+  // prompt=login means, rather than merely forgetting a remembered address.
+  element("not-me")?.addEventListener("click", () => {
+    forgetSignIn(config.appId);
+    try {
+      sessionStorage.removeItem("fidj.interaction.email");
+    } catch {}
+    void (async () => {
+      window.location.assign(await oidc!.beginLogin({prompt: "login"}));
+    })();
   });
   element("interaction")?.addEventListener("submit", () => {
     const address = element<HTMLInputElement>("email")?.value || "";
