@@ -274,6 +274,16 @@ function startModule() {
   }
 }
 function render() {
+  // Leaving the provider's screen is a hash change, and a hash change does not
+  // reload the document: without this the shell kept its interaction state and
+  // drew that screen again over an address that no longer named one — the
+  // person asked to leave and stayed put.
+  if (interactionId && !addressedInteraction()) {
+    interactionId = "";
+    interactionError = "";
+    interaction = null;
+    interactionFailed = false;
+  }
   // Once the mounted app owns the document the shell cannot draw over it, and
   // its own router will try to match addresses that were never its business.
   // So any address it does not own means starting the document again — checked
@@ -577,6 +587,11 @@ const refusals: Record<string, string> = {
   agreement: "Accept the app's service agreement to continue.",
   refused: "That could not be completed. Please try again.",
 };
+
+function addressedInteraction() {
+  const query = window.location.hash.slice(2).split("?")[1] || "";
+  return new URLSearchParams(query).get("interaction") || "";
+}
 
 function readInteraction() {
   const query = window.location.hash.slice(2).split("?")[1] || "";

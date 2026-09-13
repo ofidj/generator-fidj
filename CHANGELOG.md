@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.2] - 2026-09-13
+
+- Leave the provider's screen when the address does. Going from
+  `#/signin?interaction=…` back to `#/signin` changes only the fragment, so the
+  document is not reloaded: the shell kept its interaction state and drew that
+  screen again over an address that no longer named one. A person who asked to
+  leave stayed put.
+
 ## [1.4.1] - 2026-09-13
 
 - Reload when a mounted app is handed an address it does not own. Checked first
@@ -17,7 +25,7 @@
 ## [1.4.0] - 2026-09-13
 
 - Render the provider's sign-in screen. When Fidj's provider hands a person to a
-  front end (`FIDJ_INTERACTION_UI` on the API), the generated shell now shows
+  front end (`FIDJ_SIGNIN_ON_UI` on the API), the generated shell now shows
   that screen: it names the app asking, says what Fidj is, collects the
   credential or the approval, and posts it straight back — a real form
   navigation, because the provider answers with a redirect that carries the
