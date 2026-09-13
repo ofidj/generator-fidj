@@ -1,4 +1,4 @@
-import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage} from "./service-agreement";
+import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn} from "./service-agreement";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
 import "./style.css";
@@ -58,10 +58,20 @@ function badges() {
     .map((entry) => `<span>${escape(entry)}</span>`)
     .join("")}</footer>`;
 }
+// Signing out of this app revokes this app's access and nothing else: the Fidj
+// session survives, which is what makes the next app free to enter. That is a
+// good design and a bad surprise, so the notice says what actually happened and
+// where the rest of it lives — on a shared computer the difference is the whole
+// point.
+let leftTheApp = false;
 function banner() {
-  return message
-    ? `<p role="${failed ? "alert" : "status"}" class="${failed ? "error" : "notice"}">${escape(message)}</p>`
+  if (!message) return "";
+  const role = failed ? "alert" : "status";
+  const kind = failed ? "error" : "notice";
+  const finish = leftTheApp
+    ? ` <a href="${escape(config.dashboardUrl)}/#/my/profile" target="_blank" rel="noopener">Sign out of Fidj too</a>`
     : "";
+  return `<p role="${role}" class="${kind}">${escape(message)}${finish}</p>`;
 }
 
 // One navigation bar for every in-app screen, so signing out stays one click
@@ -83,9 +93,15 @@ function wireNav() {
     "click",
     () =>
       void action(async () => {
+        const wasSignedIn = signedIn;
         if (signedIn) await sdk.logout(true);
+        forgetSignIn(config.appId);
         signedIn = false;
         anonymous = false;
+        if (wasSignedIn) {
+          leftTheApp = true;
+          message = `Signed out of ${config.title}. You are still signed in to Fidj.`;
+        }
         navigate("signin");
       }),
   );
@@ -131,8 +147,13 @@ async function refresh() {
     request(appPath + "/consents"),
     request(appPath + "/consents/history").then((result) => result.history),
   ]);
-  emailVerified = (await request("/me")).user?.verified === true;
+  const me = (await request("/me")).user;
+  emailVerified = me?.verified === true;
   signedIn = true;
+  // The ID token of a code flow carries only the subject, by design, so the
+  // address the entry can offer next time comes from the membership the app
+  // just read — not from a claim it does not have.
+  rememberSignIn(config.appId, String(me?.poc?.email || me?.username || ""));
 }
 async function action(task: () => Promise<void>) {
   if (busy) return;
@@ -146,7 +167,10 @@ async function action(task: () => Promise<void>) {
   const submit = root.querySelector<HTMLButtonElement>("button.primary");
   if (submit) submit.textContent = "Please wait…";
   failed = false;
-  if (initialized) message = "";
+  if (initialized) {
+    message = "";
+    leftTheApp = false;
+  }
   try {
     await task();
   } catch (error) {
@@ -345,7 +369,12 @@ function render() {
     anonymous = true;
     navigate("content");
   });
-  if (oidc && element("signin")) element("signin")!.innerHTML = agreementMarkup() + '<p>Continue securely with your Fidj account. Your password stays with Fidj.</p><button class="primary" type="submit">Continue with Fidj</button>';
+  if (oidc && element("signin"))
+    element("signin")!.innerHTML = providerEntry(config.title, config.appId);
+  element("forget-hint")?.addEventListener("click", () => {
+    forgetSignIn(config.appId);
+    render();
+  });
   void bindAgreement(element<HTMLFormElement>("signin"), config.title, config.apiEndpoint, config.appId, signInAgreementAccepted);
   element<HTMLFormElement>("signin")?.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -384,8 +413,11 @@ function render() {
     () =>
       void action(async () => {
         await sdk.logout(true);
+        forgetSignIn(config.appId);
         signedIn = false;
         anonymous = false;
+        leftTheApp = true;
+        message = `Signed out of ${config.title}. You are still signed in to Fidj.`;
         navigate("signin");
       }),
   );

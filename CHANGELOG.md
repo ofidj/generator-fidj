@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.0] - 2026-09-13
+
+- Say where the account lives before offering the button. "Continue with Fidj"
+  borrows the grammar of an optional social login — that button always sits next
+  to an email and a password — so on an app whose accounts *are* Fidj accounts,
+  the missing form read as something broken. The entry now leads with the
+  explanation, names account creation, and its button says what it does:
+  **Sign in with Fidj**.
+- Offer to continue as the person who last signed in here, remembered on the
+  app's own origin and forgotten on sign-out. No cross-site question is asked,
+  and none is answered.
+- Say what signing out of an app actually did. It revokes that app's access and
+  leaves the Fidj session alone — which is what makes the next app free, and a
+  surprise on a shared computer. The notice says so and links to Fidj.
+- Share one provider entry between both app shapes; they had drifted apart.
+
 ## [1.1.0] - 2026-09-13
 
 - Mount an app at the shell's own address instead of under `/module/`. The

@@ -1,4 +1,4 @@
-import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage} from "./service-agreement";
+import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn} from "./service-agreement";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import "./style.css";
 import { showVersionBadge } from "./version";
@@ -66,6 +66,9 @@ async function api(path: string, method = "GET", data?: unknown) {
 }
 async function load() {
   session = await api("session");
+  // Remembered on this app's own origin so the entry can offer to continue as
+  // them next time; signing out forgets it.
+  if (session?.username) rememberSignIn(settings.appId, session.username);
   [notes, privacy] = await Promise.all([
     api("notes").then((result) => result.notes),
     api("privacy"),
@@ -94,7 +97,7 @@ function render() {
   <main>${notice ? `<p class="notice" role="status">${escape(notice)}</p>` : ""}${error ? `<p class="error" role="alert">${escape(error)}</p>` : ""}
   ${
     !session
-      ? `<section class="welcome"><div><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>Good ideas<br>start here.</h1><p>Keep your notes together, with access you understand and privacy you control.</p><div class="promise"><img src="/fidj-logo.png" alt=""><span>Your account connects through Fidj.<br>Your choices belong to this app.</span></div></div><form id="signin" class="card"><h2>Welcome to ${escape(settings.title)}</h2>${oidc ? `<p>Continue securely with your Fidj account. Your password stays with Fidj.</p>${agreementMarkup()}<button class="primary" type="submit">Continue with Fidj</button>` : `<p>Sign in with your Fidj account.</p><label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" value="${escape(signInPassword)}" autocomplete="current-password" required>${agreementMarkup()}<button class="primary" type="submit">Continue</button>${settings.localDemo ? `<div class="demo"><strong>Try the local example</strong><p>Alex owns the app. Maya and Sam start with the Free role.</p><button type="button" data-demo="alex">Alex · owner</button><button type="button" data-demo="maya">Maya · member</button><button type="button" data-demo="sam">Sam · member</button></div>` : ""}`}</form></section>`
+      ? `<section class="welcome"><div><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>Good ideas<br>start here.</h1><p>Keep your notes together, with access you understand and privacy you control.</p><div class="promise"><img src="/fidj-logo.png" alt=""><span>Your account connects through Fidj.<br>Your choices belong to this app.</span></div></div><form id="signin" class="card"><h2>Welcome to ${escape(settings.title)}</h2>${oidc ? providerEntry(settings.title, settings.appId) : `<p>Sign in with your Fidj account.</p><label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" autocomplete="username" required><label for="password">Password</label><input id="password" type="password" value="${escape(signInPassword)}" autocomplete="current-password" required>${agreementMarkup()}<button class="primary" type="submit">Continue</button>${settings.localDemo ? `<div class="demo"><strong>Try the local example</strong><p>Alex owns the app. Maya and Sam start with the Free role.</p><button type="button" data-demo="alex">Alex · owner</button><button type="button" data-demo="maya">Maya · member</button><button type="button" data-demo="sam">Sam · member</button></div>` : ""}`}</form></section>`
       : `
   <div class="page-heading"><div><p class="eyebrow">YOUR WORKSPACE</p><h1>A place to think.</h1><p>${escape(session.username)} <span class="roles">${session.roles.map(escape).join(" · ") || "No assigned roles"}</span></p></div><button id="signout">Sign out</button></div>
   <nav><button id="workspace-tab" class="${view === "workspace" ? "selected" : ""}">My notes</button><button id="privacy-tab" class="${view === "privacy" ? "selected" : ""}">My privacy</button><button id="refresh">Refresh access</button></nav>
@@ -157,6 +160,7 @@ function render() {
     () =>
       void action(async () => {
         await sdk.logout(true);
+        forgetSignIn(settings.appId);
         session = null;
         notes = [];
         privacy = null;

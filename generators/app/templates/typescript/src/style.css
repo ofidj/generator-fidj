@@ -935,3 +935,25 @@ summary:focus-visible {
 .signin-agreement button { margin-block: 0.5rem; padding: 0; border: 0; background: transparent; text-decoration: underline; }
 #agreement-dialog { color: var(--fidj-text); background: var(--fidj-paper); border: 1px solid var(--fidj-line); border-radius: var(--fidj-radius); padding: 1.5rem; max-width: min(40rem, calc(100vw - 2rem)); max-height: 80vh; overflow: auto; }
 #agreement-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* The entry explains itself before it offers its button. A person whose account
+ * lives somewhere else needs to know that before they look for the form that is
+ * not coming, so this is body text above the action, not fineprint below it. */
+.signin-lead {
+  margin: 0 0 18px;
+  color: var(--fidj-ink-soft, inherit);
+  line-height: 1.5;
+}
+/* Present but not competing: "use a different account" is the way out of a
+ * remembered address, not an alternative worth the weight of the primary. */
+button.quiet {
+  margin-top: 10px;
+  background: none;
+  border: none;
+  color: inherit;
+  text-decoration: underline;
+  padding: 6px 0;
+  font: inherit;
+  cursor: pointer;
+  width: auto;
+}

@@ -60,3 +60,55 @@ export async function bindAgreement(form: HTMLFormElement | null, title: string,
   retry.addEventListener("click", load);
   await load();
 }
+
+// The entry every app that delegates to the provider renders, in one place
+// because both app shapes render it and they had drifted apart.
+//
+// "Continue with Fidj" alone borrows the grammar of an optional social login —
+// that button always sits next to an email and a password — so on an app whose
+// accounts *are* Fidj accounts, the missing form reads as something broken. The
+// explanation therefore comes before the button, not as reassurance after it,
+// and nothing presupposes an account the person may not have yet.
+const hintKey = (appId: string) => "fidj.entry." + appId;
+
+export function signInHint(appId: string) {
+  try {
+    return localStorage.getItem(hintKey(appId)) || "";
+  } catch {
+    return "";
+  }
+}
+
+// Remembered on this app's own origin, about this app's own member: no
+// cross-site question is asked, and none is answered. Signing out forgets, so a
+// shared browser does not show the next person an address.
+export function rememberSignIn(appId: string, label: string) {
+  try {
+    if (label) localStorage.setItem(hintKey(appId), label);
+  } catch {}
+}
+
+export function forgetSignIn(appId: string) {
+  try {
+    localStorage.removeItem(hintKey(appId));
+  } catch {}
+}
+
+export function providerEntry(title: string, appId: string) {
+  const escapeText = (value: unknown) =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      (char) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+          char
+        ]!,
+    );
+  const hint = signInHint(appId);
+  const lead = hint
+    ? `<p class="signin-lead">You signed in here with Fidj before. ${escapeText(title)} accounts are Fidj accounts, and this site never sees your password — you can also create or use another one.</p>`
+    : `<p class="signin-lead">${escapeText(title)} accounts are Fidj accounts. You will sign in — or create yours — on Fidj's own page, so this site never sees your password.</p>`;
+  const action = hint
+    ? `<button class="primary" type="submit">Continue as ${escapeText(hint)}</button><button type="button" id="forget-hint" class="quiet">Use a different account</button>`
+    : `<button class="primary" type="submit">Sign in with Fidj</button>`;
+  return lead + agreementMarkup() + action;
+}
