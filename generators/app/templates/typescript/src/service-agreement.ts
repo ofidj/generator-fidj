@@ -138,7 +138,11 @@ export function providerEntry(
   // on this path it is this site that holds the password.
   if (shape === "inline")
     return (
-      `<p class="signin-lead">${escapeText(title)} accounts are Fidj accounts. Sign in below — ${escapeText(title)} handles your password itself on this page.</p>` +
+      `<p class="signin-lead">${
+        isFidjItself
+          ? "One account across every app that uses Fidj, and a separate set of choices for each one."
+          : `${escapeText(title)} accounts are Fidj accounts. Sign in below — ${escapeText(title)} handles your password itself on this page.`
+      }</p>` +
       agreementMarkup() +
       credentials
     );
