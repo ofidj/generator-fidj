@@ -333,6 +333,12 @@ if (require.main === module) {
     dashboardUrl: process.env.FIDJ_DASHBOARD_URL || "https://fidj.ovh",
     title: process.env.APP_TITLE || "My workspace",
     releaseVersion: process.env.APP_VERSION || "",
+    // How this app asks. The generator writes it; anything it does not
+    // recognise means the shape that keeps the promise — Fidj asks, and this
+    // app never sees a password.
+    signin: ["button", "inline", "both"].includes(process.env.FIDJ_SIGNIN || "")
+      ? (process.env.FIDJ_SIGNIN as "button" | "inline" | "both")
+      : "button",
     localDemo:
       process.env.LOCAL_DEMO === "true" &&
       host === "127.0.0.1" &&

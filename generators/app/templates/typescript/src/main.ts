@@ -1,4 +1,5 @@
-import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn} from "./service-agreement";
+import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, showEmailEntry, type SigninShape} from "./service-agreement";
+import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "./provider-window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import "./style.css";
 import { showVersionBadge } from "./version";
@@ -16,7 +17,7 @@ type Settings = {
   // An owner may let their own app collect the credential beside the Fidj door.
   // Off unless asked for: the promise the entry makes otherwise is that this app
   // never sees a password.
-  ownCredentials?: boolean;
+  signin?: SigninShape;
 };
 const root = document.querySelector<HTMLDivElement>("#app")!;
 const sdk = new FidjNodeService();
@@ -39,6 +40,10 @@ let leaving = false;
 let signInEmail = "";
 let signInPassword = "";
 let signInAgreementAccepted = false;
+// Whether the person asked for the app's own form: the entry is rebuilt on every
+// render, and a refused sign-in is a render, so it has to be remembered or the
+// form folds away under the complaint about it.
+let emailEntryOpen = false;
 const escape = (value: unknown) =>
   String(value ?? "").replace(
     /[&<>"']/g,
@@ -85,6 +90,85 @@ async function load() {
     api("privacy"),
   ]);
 }
+// Taking the Fidj door, from inside the click that asked for it. The window has
+// to exist before the authorization URL is fetched — building it costs a
+// discovery round-trip, and a window opened after an await is one the browser
+// no longer attributes to the press, which every popup blocker refuses.
+// The window this page is waiting on, while it is waiting on it.
+let waitingFor: ProviderWindow | null = null;
+
+// What the entry says while that window is open: the way back to it, and the way
+// out of it. The waiting happens in a window that can be behind this page, and
+// from here that looks exactly like nothing having happened.
+function offerTheWindowBack(providerWindow: ProviderWindow) {
+  const waiting = root.querySelector<HTMLButtonElement>("button[data-busy]");
+  if (!waiting) return;
+  waiting.classList.add("is-waiting");
+  // It says what is happening rather than what to do, because what to do is
+  // happening in the other window. Dropping the accent is the point: this is a
+  // state, not the way in. It stays pressable all the same — somebody who has
+  // lost that window behind this page needs precisely this to be pressable.
+  waiting.textContent = "Connecting with Fidj…";
+  waiting.title = "Bring the Fidj window back to the front";
+  // Borrowing a submit button's press: submitting would open a second window.
+  waiting.onclick = (event) => {
+    event.preventDefault();
+    providerWindow.focus();
+  };
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.id = "cancel-provider";
+  cancel.className = "quiet";
+  cancel.textContent = "Cancel";
+  cancel.onclick = () => {
+    cancel.disabled = true;
+    providerWindow.giveUp();
+  };
+  waiting.insertAdjacentElement("afterend", cancel);
+}
+
+function signInThroughProvider(trigger: HTMLElement | null) {
+  // Held, not read again: `oidc` is settled once at start-up, and reading it
+  // inside the callback asks the compiler to prove that across an await.
+  const provider = oidc;
+  if (!provider) return;
+  // Already open: bring that one back rather than start a second conversation.
+  if (waitingFor?.isOpen()) {
+    waitingFor.focus();
+    return;
+  }
+  const providerWindow = openProviderWindow();
+  trigger?.setAttribute("data-busy", "true");
+  void action(async () => {
+    let url: string;
+    try {
+      // Somebody who has just signed out is asked again rather than recognised:
+      // otherwise pressing the door undoes the sign-out without a screen.
+      url = await provider.beginLogin(
+        provider.signedOutHere() ? {prompt: "login"} : {},
+      );
+    } catch (reason) {
+      providerWindow?.giveUp();
+      throw reason;
+    }
+    // Blocked, or a browser that would not open one: leaving this page is the
+    // flow this one replaced, and it still works.
+    if (!providerWindow) {
+      window.location.assign(url);
+      return;
+    }
+    providerWindow.show(url);
+    waitingFor = providerWindow;
+    offerTheWindowBack(providerWindow);
+    const callback = await providerWindow.answer().finally(() => {
+      waitingFor = null;
+    });
+    // Closed by hand. A person who changed their mind is not owed an error.
+    if (!callback) return;
+    await provider.completeLogin(callback);
+    await load();
+  });
+}
 async function action(task: () => Promise<void>) {
   if (busy) return;
   busy = true;
@@ -108,7 +192,7 @@ function render() {
   <main>${notice ? `<p class="notice" role="status">${escape(notice)}</p>` : ""}${error ? `<p class="error" role="alert">${escape(error)}</p>` : ""}
   ${
     !session
-      ? `<section class="welcome"><div><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>Good ideas<br>start here.</h1><p>Keep your notes together, with access you understand and privacy you control.</p><div class="promise"><img src="/fidj-logo.png" alt=""><span>Your account connects through Fidj.<br>Your choices belong to this app.</span></div></div><form id="signin" class="card"><h2>Welcome to ${escape(settings.title)}</h2>${oidc ? providerEntry(settings.title, settings.appId, settings.ownCredentials ? credentialFields() : "") : `<p>Sign in with your Fidj account.</p>${credentialFields()}${agreementMarkup()}<button class="primary" type="submit">Continue</button>${settings.localDemo ? `<div class="demo"><strong>Try the local example</strong><p>Alex owns the app. Maya and Sam start with the Free role.</p><button type="button" data-demo="alex">Alex · owner</button><button type="button" data-demo="maya">Maya · member</button><button type="button" data-demo="sam">Sam · member</button></div>` : ""}`}</form></section>`
+      ? `<section class="welcome"><div><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>Good ideas<br>start here.</h1><p>Keep your notes together, with access you understand and privacy you control.</p><div class="promise"><img src="/fidj-logo.png" alt=""><span>Your account connects through Fidj.<br>Your choices belong to this app.</span></div></div><form id="signin" class="card"><h2>Welcome to ${escape(settings.title)}</h2>${oidc ? providerEntry(settings.title, settings.appId, settings.signin === "button" ? "" : credentialFields(), false, settings.signin || "button") : `<p>Sign in with your Fidj account.</p>${credentialFields()}${agreementMarkup()}<button class="primary" type="submit">Continue</button>${settings.localDemo ? `<div class="demo"><strong>Try the local example</strong><p>Alex owns the app. Maya and Sam start with the Free role.</p><button type="button" data-demo="alex">Alex · owner</button><button type="button" data-demo="maya">Maya · member</button><button type="button" data-demo="sam">Sam · member</button></div>` : ""}`}</form></section>`
       : `
   <div class="page-heading"><div><p class="eyebrow">YOUR WORKSPACE</p><h1>A place to think.</h1><p>${escape(session.username)} <span class="roles">${session.roles.map(escape).join(" · ") || "No assigned roles"}</span></p></div><button id="signout">Sign out</button></div>
   <nav><button id="workspace-tab" class="${view === "workspace" ? "selected" : ""}">My notes</button><button id="privacy-tab" class="${view === "privacy" ? "selected" : ""}">My privacy</button><button id="refresh">Refresh access</button></nav>
@@ -131,6 +215,12 @@ function render() {
   }
   <footer>Built with Fidj · One identity. Separate choices for every app.</footer></main>`;
   void bindAgreement(el<HTMLFormElement>("signin"), settings.title, settings.apiEndpoint, settings.appId, signInAgreementAccepted);
+  // The app's own form, folded away under the Fidj door rather than beside it.
+  if (emailEntryOpen) showEmailEntry(true);
+  el("use-email")?.addEventListener("click", () => {
+    emailEntryOpen = !emailEntryOpen;
+    showEmailEntry(emailEntryOpen, true);
+  });
   el<HTMLFormElement>("signin")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const email = el<HTMLInputElement>("email")?.value || "";
@@ -149,11 +239,14 @@ function render() {
       render();
       return;
     }
+    // The Fidj door opens a window of its own, from inside this click: opening
+    // it after the authorization URL has been fetched is what a popup blocker
+    // refuses, because the browser no longer attributes it to the press.
+    if (oidc) {
+      signInThroughProvider(event.submitter as HTMLElement | null);
+      return;
+    }
     void action(async () => {
-      if (oidc) {
-        window.location.assign(await oidc.beginLogin());
-        return;
-      }
       try {
         await sdk.login(email, password, { autoSignup: false, ...acceptance });
       } catch (reason) {
@@ -308,4 +401,15 @@ async function start() {
     root.textContent =
       "This app could not load. Please check the server and retry.";
 }
-void start();
+// This document is the window the entry opened, and the provider has just
+// answered into it: hand the answer to the page that opened it and get out of
+// the way. A window the browser will not close was not scripted open, so the
+// ordinary return path runs after all rather than stranding somebody here.
+if (relayProviderAnswer()) {
+  root.innerHTML = '<p role="status">Signing you in…</p>';
+  window.setTimeout(() => {
+    if (!window.closed) void start();
+  }, 800);
+} else {
+  void start();
+}

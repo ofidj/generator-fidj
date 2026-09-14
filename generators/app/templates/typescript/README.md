@@ -51,7 +51,7 @@ Set `--anonymous false` in the generator command to remove anonymous entry and r
 
 ## Application modules
 
-When generated with `--module`, successful sign-in opens the copied module configured by `moduleEntry`. It runs under `/module/` on the same origin and must validate sessions/permissions independently. Its entry contains a `fidj-signin` meta URL for returning to this shared sign-in page. Module code is public static output; user data belongs behind authorized APIs. Rebuild the maintained module source and regenerate to update it; never patch its copied files here.
+When generated with `--module`, successful sign-in starts the copied module at the address configured by `moduleEntry`, inside this document rather than as a second page. Its assets are served from `/module/` on the same origin and it must validate sessions/permissions independently. To return to this shared sign-in page it leaves the document for the site root, optionally with `?departure=completed|pending`. Module code is public static output; user data belongs behind authorized APIs. Rebuild the maintained module source and regenerate to update it; never patch its copied files here.
 
 ## Connect app data rights
 

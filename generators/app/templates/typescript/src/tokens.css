@@ -34,6 +34,11 @@
   /* Accents. The red is the Fidj mark; it identifies the account and privacy
    * provider, so it stays sparing — a dot, a rule, a hover. */
   --fidj-accent: #d6342c;
+  /* The one place the accent is a surface rather than a mark: the Fidj door on
+   * a sign-in entry. It is the control that belongs to Fidj and not to the app
+   * around it, so it is the one thing allowed to carry the mark's weight. */
+  --fidj-accent-strong: #b52a23;
+  --fidj-on-accent: #fbfaf8;
   --fidj-danger: #b8352c;
   --fidj-danger-strong: #8c2a22;
   --fidj-danger-tint: #fdf7f6;

@@ -44,6 +44,7 @@ one.
 > `test/parity.test.cjs` fails if either door ever gains an input the other
 > lacks. It is not an entry point to hand to anyone building an app.
 
+- `--signin button|inline|both`: how the app asks (default: `button`). `button` hands every sign-in to Fidj, which is the only shape where this app never sees a password. `inline` keeps the app's own email-and-password form and no Fidj door, for an owner who has decided their page is to be trusted with the credential. `both` leads with the Fidj door and folds the app's form under it — what mleweb passes. The older `--credentials true|false` still says what it always said (`true` is `both`); `--signin` wins when both are given.
 - `--anonymous true|false`: show or hide anonymous entry in content apps (default: `true`). Set `--anonymous false` for a sign-in-only entry flow, as mleweb does.
 - `--highlight "<heading>|<body>"`: add a numbered cell to the sign-in panel, repeatable up to six. These are the app's own selling points, so an app that passes none simply shows its identity — mleweb passes none, Fidj passes four.
 - `--badge <text>`: add a trust badge under the sign-in form, repeatable up to four, 40 characters each. None are supplied by default — "EU-hosted" or "GDPR art. 17 · 20" are claims about a particular app, not about every app the generator makes.
@@ -101,6 +102,23 @@ picks up whatever is published at the time.
 
 The generated content app opens on `/#/signin`. Sign in, or choose **Enter anonymously** when enabled, to open `/#/content`, containing the supplied HTML. Signed-in users can open **My privacy** separately. Sign-out and departure return to the sign-in screen. Anonymous content is public; this navigation flow is not a security boundary for static assets.
 
+**The entry leads with the Fidj door, and that door opens a window.** The button
+is the one control on the screen wearing `--fidj-accent`, because it is the one
+that belongs to Fidj rather than to the app — and it is the path where the app
+never sees a password. An app generated with `--signin both` keeps its own
+email-and-password form under an *Inline form* disclosure, with its service
+agreement: opening it folds the Fidj door away, because the two are alternatives
+rather than a list. That agreement gates the app's own door and nothing else, so
+an agreement that fails to load never shuts the Fidj door.
+
+Pressing it opens Fidj in a browser window of its own rather than navigating
+away. Fidj's screens are served from another origin and refuse to be framed, so
+a dialog drawn inside the page cannot hold them; a window can, and the page the
+person was reading stays exactly where it was. The window says which app it will
+return them to, hands the answer back when they are done, and closes itself. A
+browser that will not open one falls back to the full-page redirect. Fidj's own
+console takes the same door for the same reason — one journey, three apps.
+
 ## Compose an existing app as a module
 
 Build your application for the `/module/` base URL, then pass its public output to the same generator:
@@ -114,7 +132,7 @@ The result is one static website: the generated SDK sign-in entry and the module
 
 Hash routes other than the generated entry/content/privacy views are forwarded to the module, preserving existing public cards and console links. The module remains responsible for guarding private routes.
 
-The module entry receives a `meta[name="fidj-signin"]` URL, relative to its base URL. A module can send its sign-in, logout or expired-session flow there. Fidj's console implements this handoff and preserves departure status. The generated preview serves module assets from an explicit build manifest, including directory index URLs.
+Sign-in, sign-out and expired sessions belong to the shell, which owns those addresses: a module reaches them by leaving the document — the site root — rather than routing inside it, because the shell starts the module in place and only hears `hashchange`. A departure status travels as `?departure=completed|pending` on that address. Fidj's console implements this handover. The shell also names itself in that document — `meta[name="fidj-shell"]`, holding the base its addresses start from — so a module can offer what only a shell has, such as the account screen at `#/account`; standalone there is no such meta and nothing to offer. The generated preview serves module assets from an explicit build manifest, including directory index URLs, and the generated entry names the module's scripts and stylesheet in its head so the browser starts them without waiting for the shell's session.
 
 `fidj-app` now exercises this path with `npm run create:local`: its owner/profile/privacy features remain an explicit Angular console module, while the generator owns the shared entry and final assembly. The local launcher serves the generated Fidj output on port 4200. The source console is maintained outside disposable `.gen` and must be rebuilt before regenerating.
 

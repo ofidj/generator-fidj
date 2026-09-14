@@ -1,4 +1,5 @@
-import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, signInHint} from "./service-agreement";
+import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, signInHint, showEmailEntry, type SigninShape} from "./service-agreement";
+import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "./provider-window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
 import "./style.css";
@@ -29,6 +30,15 @@ let leaving = false;
 let signInEmail = "";
 let signInPassword = "";
 let signInAgreementAccepted = false;
+// Who is signed in, as this app's own membership answers it. The bar names them
+// and the account screen says it again where it can be checked; the ID token of
+// a code flow carries only a subject, so this comes from the membership.
+let accountEmail = "";
+// Whether the person asked for the app's own form. The entry is rebuilt on every
+// render, and a refused sign-in is a render: without this, pressing Continue
+// with the agreement unchecked folded the form away and left the complaint
+// floating above a door the person could no longer see.
+let emailEntryOpen = false;
 const accountRoutes = ["forgot", "reset", "verify", "account"];
 let linkToken = "";
 let verificationConfirmed = false;
@@ -74,21 +84,49 @@ function banner() {
   return `<p role="${role}" class="${kind}">${escape(message)}${finish}</p>`;
 }
 
-// One navigation bar for every in-app screen, so signing out stays one click
-// away wherever you are. The sign-in entry and the pre-authentication account
-// screens are full-bleed and carry none.
-function appNav(current: "content" | "privacy" | "account") {
+// One navigation, in the app's own bar: past its mark and its name, past a
+// rule, the way Fidj's console carries its own. It used to sit in the page
+// under a bar that held only a name, which read as two headers for one app.
+//
+// Two tabs, because what this app holds about somebody and what they can do
+// about it are one subject. Split across "My privacy" and "My account" it asked
+// a person to look in two places for one answer — and the account they were
+// looking for was the one named right here, which is why the tab says it.
+//
+// Signing out is not a place, so it is not a tab: it is a thing you do to an
+// account, and it lives on that account's screen.
+function appNav(current: "content" | "account") {
   const tab = (id: string, label: string, selected: boolean) =>
     `<button id="${id}"${selected ? ' class="selected" aria-current="page"' : ""}>${label}</button>`;
-  return `<nav class="content-nav" aria-label="App navigation">${tab("content-tab", "Content", current === "content")}${tab("privacy-tab", signedIn ? "My privacy" : "Sign in", current === "privacy")}${signedIn ? tab("account-tab", "My account", current === "account") : ""}${tab("exit", signedIn ? "Sign out" : "Back to sign in", false)}</nav>`;
+  const account = signedIn
+    ? tab(
+        "account-tab",
+        accountEmail ? `Account (${escape(accountEmail)})` : "Account",
+        current === "account",
+      )
+    : tab("account-tab", "Sign in", false);
+  return tab("content-tab", "Content", current === "content") + account;
+}
+
+// The bar belongs to the document, not to the screen being drawn: it survives
+// every route change, so it is filled rather than rebuilt with the page.
+function renderNav(current: "content" | "account") {
+  const nav = element("app-nav");
+  if (!nav) return;
+  nav.innerHTML = appNav(current);
+  nav.hidden = false;
+  wireNav();
 }
 
 function wireNav() {
   element("content-tab")?.addEventListener("click", () => navigate("content"));
-  element("account-tab")?.addEventListener("click", () => navigate("account"));
-  element("privacy-tab")?.addEventListener("click", () =>
-    navigate(signedIn ? "privacy" : "signin"),
+  element("account-tab")?.addEventListener("click", () =>
+    navigate(signedIn ? "account" : "signin"),
   );
+}
+
+// Leaving this app's session, from the screen that is about this app's session.
+function wireSignOut() {
   element("exit")?.addEventListener(
     "click",
     () =>
@@ -153,7 +191,8 @@ async function refresh() {
   // The ID token of a code flow carries only the subject, by design, so the
   // address the entry can offer next time comes from the membership the app
   // just read — not from a claim it does not have.
-  rememberSignIn(config.appId, String(me?.poc?.email || me?.username || ""));
+  accountEmail = String(me?.poc?.email || me?.username || "");
+  rememberSignIn(config.appId, accountEmail);
 }
 async function action(task: () => Promise<void>) {
   if (busy) return;
@@ -164,7 +203,13 @@ async function action(task: () => Promise<void>) {
     .forEach((control) => {
       control.disabled = true;
     });
-  const submit = root.querySelector<HTMLButtonElement>("button.primary");
+  // Whichever button was pressed, when the caller marked it. The entry has two
+  // submit buttons now and only one of them is `.primary` first in the
+  // document, so "Please wait…" kept landing on the Fidj door while the person
+  // watched the button they had actually pressed sit there saying nothing.
+  const submit =
+    root.querySelector<HTMLButtonElement>("button[data-busy]") ||
+    root.querySelector<HTMLButtonElement>("button.primary");
   if (submit) submit.textContent = "Please wait…";
   failed = false;
   if (initialized) {
@@ -210,6 +255,114 @@ async function action(task: () => Promise<void>) {
     root.setAttribute("aria-busy", "false");
     render();
   }
+}
+// Taking the Fidj door, from inside the click that asked for it.
+//
+// The window has to exist before the authorization URL is fetched — building it
+// costs a discovery round-trip, and a window opened after an await is one the
+// browser no longer attributes to the click, which every popup blocker refuses.
+// So it is opened empty first and sent somewhere second.
+//
+// The page that opens it is the page that finishes the sign-in: the PKCE
+// transaction lives in this window's session storage, and a new window is given
+// a copy of that storage rather than a share of it. The window it opened only
+// carries the provider's answer back.
+// The window this page is waiting on, while it is waiting on it.
+let waitingFor: ProviderWindow | null = null;
+
+// What the entry says while that window is open.
+//
+// `action` disables the screen and writes "Please wait…", which is right when
+// the waiting happens here. This waiting happens somewhere else — in a window
+// that can be behind this page, minimised, or on another desktop — and a
+// disabled sentence is then a dead end in front of the only two things worth
+// offering: the way back to that window, and the way out of it.
+function offerTheWindowBack(providerWindow: ProviderWindow) {
+  const waiting = root.querySelector<HTMLButtonElement>("button[data-busy]");
+  if (!waiting) return;
+  waiting.disabled = false;
+  waiting.classList.add("is-waiting");
+  // It says what is happening rather than what to do, because what to do is
+  // happening in the other window. Dropping the accent is the point: this is a
+  // state, not the way in. It stays pressable all the same — somebody who has
+  // lost that window behind this page needs precisely this to be pressable.
+  waiting.textContent = "Connecting with Fidj…";
+  waiting.title = "Bring the Fidj window back to the front";
+  // It is a submit button, and submitting would open a second window: the press
+  // is being borrowed, so its default has to go.
+  waiting.onclick = (event) => {
+    event.preventDefault();
+    providerWindow.focus();
+  };
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.id = "cancel-provider";
+  cancel.className = "quiet";
+  cancel.textContent = "Cancel";
+  // Closing it is the whole answer: the window resolves to nothing, and the
+  // entry is drawn again exactly as it was.
+  cancel.onclick = () => {
+    cancel.disabled = true;
+    providerWindow.giveUp();
+  };
+  waiting.insertAdjacentElement("afterend", cancel);
+}
+
+function signInThroughProvider(
+  trigger: HTMLElement | null,
+  options: { silent?: boolean; prompt?: string } = {},
+) {
+  if (!oidc) return;
+  // Already open: bring that one back rather than start a second conversation
+  // with the provider. Pressing the door again is what somebody does when the
+  // window is behind the page, and it means "where did it go", not "again".
+  if (waitingFor?.isOpen()) {
+    waitingFor.focus();
+    return;
+  }
+  const providerWindow = openProviderWindow();
+  trigger?.setAttribute("data-busy", "true");
+  void action(async () => {
+    let url: string;
+    try {
+      // Being recognised again is the one thing somebody who has just signed
+      // out did not ask for, and skipping this is what let a sign-out be undone
+      // by pressing the door again: the provider still knew the browser and
+      // answered with a code, no screen at all. Ending the provider session is
+      // what should make that impossible, and that call can be refused — so the
+      // door asks rather than assumes, until somebody signs in again.
+      url = await oidc.beginLogin(
+        options.prompt || options.silent || !oidc.signedOutHere()
+          ? options
+          : {...options, prompt: "login"},
+      );
+    } catch (error) {
+      providerWindow?.giveUp();
+      throw error;
+    }
+    // No window to put it in — blocked, or a browser that would not open one.
+    // Leaving this page is the flow this one replaced, and it still works.
+    if (!providerWindow) {
+      window.location.assign(url);
+      return;
+    }
+    providerWindow.show(url);
+    waitingFor = providerWindow;
+    offerTheWindowBack(providerWindow);
+    const callback = await providerWindow.answer().finally(() => {
+      waitingFor = null;
+    });
+    // Closed by hand. That is an answer too, and the entry simply comes back as
+    // it was — a person who changed their mind is not owed an error.
+    if (!callback) return;
+    await oidc.completeLogin(callback);
+    try {
+      sessionStorage.removeItem("fidj.interaction.email");
+    } catch {}
+    await refresh();
+    anonymous = false;
+    navigate("content");
+  });
 }
 // A person moving between screens is making history, so push an entry: Back has
 // to return to the screen before, not to whatever preceded the application.
@@ -318,15 +471,20 @@ function render() {
     interactionScreen();
     return;
   }
-  if (!initialized) {
-    root.innerHTML = '<p role="status">Loading your session…</p>';
-    return;
-  }
   // Which of its routes need a session is the mounted app's business, not the
-  // shell's: Fidj's own console serves /pub to anyone. So any address the shell
-  // does not own is handed over as it stands.
+  // shell's: Fidj's own console serves /pub to anyone, and every app that needs
+  // one revalidates it for itself. So any address the shell does not own is
+  // handed over as it stands — before the shell asks the API who this is, not
+  // after. Waiting cost several seconds of "Loading your session…" on an address
+  // the shell was never going to draw: a token refresh and three round trips ran
+  // to completion before a quarter of a megabyte of application even began
+  // downloading. Nothing in that answer decides anything here.
   if (moduleRoute()) {
     startModule();
+    return;
+  }
+  if (!initialized) {
+    root.innerHTML = '<p role="status">Loading your session…</p>';
     return;
   }
   let route = currentRoute();
@@ -338,7 +496,10 @@ function render() {
     route = "signin";
   else if (!["signin", "content", "privacy", ...accountRoutes].includes(route))
     route = "content";
-  if (route === "privacy" && !signedIn) route = "signin";
+  // The privacy screen and the account screen became one. The address that
+  // named the first still means something to anyone who bookmarked it, so it
+  // arrives where that screen went rather than nowhere.
+  if (route === "privacy") route = signedIn ? "account" : "signin";
   window.history.replaceState(null, "", "#/" + route);
   // My account is a signed-in screen and keeps the app's chrome. Recovery and
   // verification are reached without a session, so they stand alone.
@@ -348,14 +509,29 @@ function render() {
     "signin-view",
     route === "signin" || standaloneAccount,
   );
+  // The bar belongs to the document and outlives the screen, so it has to be
+  // emptied rather than left standing: a sign-out that only redrew the page
+  // left the address of the person who had just gone still written across the
+  // top — hidden on the entry, and still in the document for anything that
+  // reads it. The screens that want it fill it again a moment later.
+  const bar = element("app-nav");
+  if (bar) {
+    bar.innerHTML = "";
+    bar.hidden = true;
+  }
   if (standaloneAccount) {
     renderAccount(route);
     return;
   }
   if (route === "account") {
-    root.innerHTML = `${appNav("account")}<section class="card content-account">${banner()}${accountForm("account")}</section>`;
-    wireNav();
+    // The two ways out, last and together: back to the app, or out of this
+    // session. Leaving the app itself is a different decision and stays where
+    // the things it erases are listed.
+    root.innerHTML = `<section class="card content-account">${banner()}${accountForm("account")}${privacyBlock()}<div class="account-actions"><button id="continue-app" class="primary">Continue to ${escape(config.title)}</button><button id="exit">Sign out</button></div></section>`;
+    renderNav("account");
     wireAccount("account");
+    wireSignOut();
+    wirePrivacy();
     return;
   }
   if (route === "content" && config.moduleEntry) {
@@ -364,42 +540,18 @@ function render() {
     return;
   }
   if (route === "content") {
-    root.innerHTML = `${appNav("content")}${element<HTMLTemplateElement>("public-content")!.innerHTML}`;
-    wireNav();
+    root.innerHTML = element<HTMLTemplateElement>("public-content")!.innerHTML;
+    renderNav("content");
     return;
   }
-  root.innerHTML = `${route === "signin" ? "" : appNav("privacy")}<section class="${route === "signin" ? "signin-shell" : "card content-account"}">
-  ${route === "signin" ? "" : banner()}
-  ${
-    route === "signin"
-      ? `<div class="signin-intro${config.highlights?.length ? "" : " is-plain"}"><header class="signin-masthead"><img class="app-mark" src="${escape(config.logo)}" alt=""><strong>${escape(config.title)}</strong></header>
+  // Only the entry reaches here now: the privacy screen and the account
+  // screen became one, and that one is drawn above.
+  root.innerHTML = `<section class="signin-shell"><div class="signin-intro${config.highlights?.length ? "" : " is-plain"}"><header class="signin-masthead"><img class="app-mark" src="${escape(config.logo)}" alt=""><strong>${escape(config.title)}</strong></header>
   <div class="signin-identity"><h1>${escape(config.welcome)}</h1><p class="signin-description">${escape(config.description)}</p></div>
   ${highlights()}</div>
   <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin"><label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" placeholder="you@company.com" autocomplete="username" required><div class="field-head"><label for="password">Password</label><a href="#/forgot">Forgot?</a></div><div class="password-field"><input id="password" type="password" value="${escape(signInPassword)}" placeholder="••••••••••" autocomplete="current-password" required><button type="button" id="reveal" aria-controls="password">Show</button></div>${agreementMarkup()}<button class="primary" type="submit">Continue</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button></form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
   <div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>Your account, with Fidj</strong></p><p>Signing in creates one Fidj account you keep across every app that uses Fidj.</p><p>You choose what this app may store — and can export or erase it at any moment.</p></div></div>
-  ${badges()}</div>`
-      : `
-  <h2>My privacy in ${escape(config.title)}</h2><p>Roles: ${roles.map(escape).join(" · ") || "No assigned roles"}</p><button id="refresh">Refresh access</button>
-  <p>These choices apply only to this app.${config.allowAnonymous ? " You can also view the public content by entering anonymously." : ""}</p>
-  <p>Service agreement: ${consent.terms ? "Accepted" : "Not recorded"}. ${consent.terms ? "Leaving withdraws this agreement." : 'This generated example uses a demo agreement. <button id="terms">Accept demo agreement</button>'}</p>
-  ${["analytics", "communications", "optionalData"].map((key, i) => `<label class="toggle"><span>${["Analytics", "Communications", "Optional data"][i]}</span><input type="checkbox" data-purpose="${key}" ${consent[key] ? "checked" : ""}></label>`).join("")}
-  <h3>Consent history</h3>${
-    history.length
-      ? history
-          .slice()
-          .reverse()
-          .map(
-            (entry) =>
-              `<p>${escape(entry.type)} · ${entry.granted ? "Accepted" : "Withdrawn"} · ${escape(entry.changedAt)}</p>`,
-          )
-          .join("")
-      : "<p>No changes yet.</p>"
-  }
-  <button id="export">Export my app data</button>
-  <p>This app stores its session in this browser. The export covers Fidj-held records for this membership. There is no separate app database in this static template.</p>
-  ${roles.includes("Owner") ? "<p>Resolve app ownership before leaving.</p>" : leaving ? '<p>Confirm departure: your membership and its Fidj-held data will be removed. Your other apps remain available.</p><button id="confirm-leave" class="danger">Confirm leaving this app</button><button id="cancel-leave">Keep my membership</button>' : '<button id="leave" class="danger">Leave this app</button>'}
-  <p class="leaving"><a href="${escape(config.dashboardUrl)}/#/my" target="_blank" rel="noopener">Open Fidj to manage every app you use ↗</a><br><small>Fidj is the account provider behind ${escape(config.title)}. This opens it in a new tab; you stay signed in here.</small></p>`
-  }</section>`;
+  ${badges()}</div></section>`;
   wireNav();
   element("reveal")?.addEventListener("click", () => {
     const field = element<HTMLInputElement>("password");
@@ -425,42 +577,18 @@ function render() {
     element("signin")!.innerHTML = providerEntry(
       config.title,
       config.appId,
-      config.ownCredentials ? credentialFields() : "",
+      config.signin === "button" ? "" : credentialFields(),
       isFidjItself,
+      config.signin as SigninShape,
     );
-  // On Fidj itself there is nobody to hand the person to, so the credential
-  // screen is fetched straight away: what they see is the form, or their name.
-  // Once per document, and never once the provider has already answered — a
-  // refusal or a cancellation must not bounce them round again.
-  if (
-    oidc &&
-    isFidjItself &&
-    // Only from the sign-in screen. Without this it fired on every render where
-    // nobody was signed in — including the recovery screens, so a person opening
-    // a password-reset link was handed a sign-in form instead of the reset they
-    // had asked for, and could never finish.
-    element("signin") &&
-    !askedProvider &&
-    !interactionId &&
-    !signedIn &&
-    // Nor when the shell has something to say. A password reset ends on this
-    // screen with "your password has been changed"; leaving for the provider
-    // would swallow the one confirmation the person was waiting for.
-    !message
-  ) {
-    askedProvider = true;
-    void (async () => {
-      if (!(await providerRendersHere())) return;
-      // Being recognised again is the one thing somebody who just signed out did
-      // not ask for, and this shortcut is what made a sign-out undoable by a page
-      // reload. Ending the provider session is what should make that impossible,
-      // and that call can be refused — so here the screen asks rather than
-      // assumes, until somebody signs in again.
-      window.location.assign(
-        await oidc.beginLogin(oidc.signedOutHere() ? { prompt: "login" } : {}),
-      );
-    })();
-  }
+  // The app's own form, for whoever came to type a password. Folded away rather
+  // than removed: the door above it is the one to take, and the person who
+  // wants this one is one click from it.
+  if (emailEntryOpen) showEmailEntry(true);
+  element("use-email")?.addEventListener("click", () => {
+    emailEntryOpen = !emailEntryOpen;
+    showEmailEntry(emailEntryOpen, true);
+  });
 
   // Forgetting the address it remembered and handing the person back to a
   // session it never ended would recognise them again: the offer has to reach
@@ -468,12 +596,10 @@ function render() {
   // is how it says so, and the provider reads it as this person saying they are
   // not the one it knows — it ends that session when it hands the screen over,
   // so walking away from the form does not hand the old face back.
-  element("forget-hint")?.addEventListener("click", () => {
+  element("forget-hint")?.addEventListener("click", (event) => {
     forgetSignIn(config.appId);
     if (oidc) {
-      void (async () => {
-        window.location.assign(await oidc.beginLogin({prompt: "login"}));
-      })();
+      signInThroughProvider(event.currentTarget as HTMLElement, {prompt: "login"});
       return;
     }
     render();
@@ -503,19 +629,20 @@ function render() {
       render();
       return;
     }
+    if (oidc && throughFidj) {
+      // "Continue as <them>" promises to carry on as that person, and handed
+      // them over to an empty email field — so the promise cost a second
+      // typing of the address it had just shown. The screen prefills from
+      // this, and nothing was writing it.
+      try {
+        const remembered = signInHint(config.appId);
+        if (remembered) sessionStorage.setItem("fidj.interaction.email", remembered);
+      } catch {}
+      signInThroughProvider(submitter);
+      return;
+    }
+    submitter?.setAttribute("data-busy", "true");
     void action(async () => {
-      if (oidc && throughFidj) {
-        // "Continue as <them>" promises to carry on as that person, and handed
-        // them over to an empty email field — so the promise cost a second
-        // typing of the address it had just shown. The screen prefills from
-        // this, and nothing was writing it.
-        try {
-          const remembered = signInHint(config.appId);
-          if (remembered) sessionStorage.setItem("fidj.interaction.email", remembered);
-        } catch {}
-        window.location.assign(await oidc.beginLogin());
-        return;
-      }
       if (oidc && (!email || !password)) {
         throw new Error("Enter your email and password, or sign in with Fidj.");
       }
@@ -532,6 +659,12 @@ function render() {
       navigate("content");
     });
   });
+}
+
+// Everything the account screen lets a person do about what this app holds:
+// the roles it reads, the agreement, the optional choices, the export and
+// the way out of the app itself.
+function wirePrivacy() {
   element("refresh")?.addEventListener("click", () => void action(refresh));
   element("signout")?.addEventListener(
     "click",
@@ -617,6 +750,33 @@ function render() {
 
 // The four account screens. My account is shown inside the app; the recovery
 // and verification ones are reached without a session and stand alone.
+// What this app holds about the person signed in, and what they can do
+// about it. It used to be a screen of its own called My privacy, one tab
+// away from the account it was about — so a person looking for their own
+// data had two places to try and no way to tell which.
+function privacyBlock() {
+  return `<h2>What ${escape(config.title)} holds</h2><p>Roles: ${roles.map(escape).join(" · ") || "No assigned roles"}</p><button id="refresh">Refresh access</button>
+  <p>These choices apply only to this app.${config.allowAnonymous ? " You can also view the public content by entering anonymously." : ""}</p>
+  <p>Service agreement: ${consent.terms ? "Accepted" : "Not recorded"}. ${consent.terms ? "Leaving withdraws this agreement." : 'This generated example uses a demo agreement. <button id="terms">Accept demo agreement</button>'}</p>
+  ${["analytics", "communications", "optionalData"].map((key, i) => `<label class="toggle"><span>${["Analytics", "Communications", "Optional data"][i]}</span><input type="checkbox" data-purpose="${key}" ${consent[key] ? "checked" : ""}></label>`).join("")}
+  <h3>Consent history</h3>${
+    history.length
+      ? history
+          .slice()
+          .reverse()
+          .map(
+            (entry) =>
+              `<p>${escape(entry.type)} · ${entry.granted ? "Accepted" : "Withdrawn"} · ${escape(entry.changedAt)}</p>`,
+          )
+          .join("")
+      : "<p>No changes yet.</p>"
+  }
+  <button id="export">Export my app data</button>
+  <p>This app stores its session in this browser. The export covers Fidj-held records for this membership. There is no separate app database in this static template.</p>
+  ${roles.includes("Owner") ? "<p>Resolve app ownership before leaving.</p>" : leaving ? '<p>Confirm departure: your membership and its Fidj-held data will be removed. Your other apps remain available.</p><button id="confirm-leave" class="danger">Confirm leaving this app</button><button id="cancel-leave">Keep my membership</button>' : '<button id="leave" class="danger">Leave this app</button>'}
+  <p class="leaving"><a href="${escape(config.dashboardUrl)}/#/my" target="_blank" rel="noopener">Open Fidj to manage every app you use ↗</a><br><small>Fidj is the account provider behind ${escape(config.title)}. This opens it in a new tab; you stay signed in here.</small></p>`;
+}
+
 function accountForm(route: string) {
   return    route === "forgot"
       ? `<h2>Reset your password</h2><p>We’ll email you a link to choose a new password for your shared Fidj account.</p><form id="recovery"><label for="recovery-email">Email address</label><input id="recovery-email" type="email" autocomplete="email" required><button class="primary">Send reset link</button></form>`
@@ -624,7 +784,7 @@ function accountForm(route: string) {
         ? `<h2>Choose a new password</h2><p>This changes your Fidj password across all your apps and signs out existing sessions.</p>${linkToken ? '<form id="recovery"><label for="new-password">New password</label><input id="new-password" type="password" autocomplete="new-password" minlength="12" required><label for="confirm-password">Confirm password</label><input id="confirm-password" type="password" autocomplete="new-password" minlength="12" required><p>Use at least 12 characters (up to 72 UTF-8 bytes).</p><button class="primary">Save new password</button></form>' : '<p>Request a new link if you no longer have an active reset link.</p><a href="#/forgot">Request a reset link</a>'}`
         : route === "verify"
           ? `<h2>${verificationConfirmed ? "Email verified" : "Verify your email"}</h2>${verificationConfirmed ? "<p>Your account is ready. Return to your app to continue.</p>" : "<p>Confirm that this email address belongs to you.</p>"}${verificationConfirmed ? "" : linkToken ? '<form id="recovery"><button class="primary">Confirm email address</button></form>' : "<p>Sign in to your account to request a new verification email.</p>"}`
-          : `<h2>My Fidj account</h2><p>Your identity is shared across your apps. Privacy choices remain separate for each app.</p><p id="verification-status">${emailVerified ? "Your email address is verified." : "Your email is not verified yet."}</p><button id="check-verification">Refresh verification status</button>${emailVerified ? "" : '<button id="resend-verification">Send verification email</button>'}<p><a href="#/forgot">Reset my password</a></p><button id="continue-app" class="primary">Continue to ${escape(config.title)}</button>`;
+          : `<h2>My Fidj account</h2><p class="account-identity">Signed in as <strong>${escape(accountEmail)}</strong></p><p>Your identity is shared across your apps. Privacy choices remain separate for each app.</p><p id="verification-status">${emailVerified ? "Your email address is verified." : "Your email is not verified yet."}</p><button id="check-verification">Refresh verification status</button>${emailVerified ? "" : '<button id="resend-verification">Send verification email</button>'}<p><a href="#/forgot">Reset my password</a></p>`;
 }
 
 
@@ -672,26 +832,13 @@ const refusals: Record<string, string> = {
 // Fidj's own front end, told apart by the one fact it already carries: the
 // dashboard it points people to is itself. "Sign in with Fidj" is the right
 // label on an app that is not Fidj; here it names a provider the person is
-// standing in, and hides the form behind a click that only fetches it.
-let askedProvider = false;
-// Whether the provider renders its sign-in on this front end. A deployment
-// decides that, so the shell asks rather than assumes: hopping to a provider
-// that answers with its own page would land the person on the API's origin,
-// which is the thing this is meant to avoid.
-let signinOnThisUi: boolean | null = null;
-async function providerRendersHere() {
-  if (signinOnThisUi !== null) return signinOnThisUi;
-  try {
-    const response = await fetch(
-      new URL("status", config.apiEndpoint.replace(/\/?$/, "/")).href,
-      {signal: AbortSignal.timeout(5000)},
-    );
-    signinOnThisUi = response.ok && (await response.json()).signin === "fidj-ui";
-  } catch {
-    signinOnThisUi = false;
-  }
-  return signinOnThisUi;
-}
+// standing in, so the door says only "Sign in".
+//
+// It used to hand the person straight to the provider on load, without waiting
+// for a click, because the provider had a page and this screen did not. Now the
+// provider opens in a window instead — and a window nobody asked for is a
+// window the browser blocks. So Fidj's entry waits to be pressed, like every
+// other app's, and the three doors finally behave the same way.
 const isFidjItself = (() => {
   try {
     return new URL(config.dashboardUrl).origin === window.location.origin;
@@ -733,6 +880,14 @@ async function loadInteraction() {
   interaction = (await response.json()) as Interaction;
 }
 
+// A window that opened on its own, over the page somebody was on, owes them the
+// way out before it asks for anything. Naming the app they came from is also the
+// only thing on this screen that they can check against what they were doing a
+// second ago — which is exactly what a page asking for a password should offer.
+function returnNotice(asking: string) {
+  return `<p class="signin-return" role="note">When you are done, this window closes and takes you back to ${escape(asking)}.</p>`;
+}
+
 function interactionScreen() {
   const details = interaction!;
   const asking = escape(details.app.title);
@@ -755,6 +910,7 @@ function interactionScreen() {
     details.prompt === "login"
       ? `<h2>${itself ? "Sign in to Fidj" : "Sign in to continue to " + asking}</h2>
   <p class="signin-lead">${itself ? "One account across every app that uses Fidj, and a separate set of choices for each one." : `This is Fidj, the account behind ${asking}. One account, and separate choices for every app that uses it — ${asking} never sees your password.`}</p>
+  ${returnNotice(itself ? "Fidj" : asking)}
   ${notice}
   <form method="post" action="${escape(action)}" id="interaction">
     <input type="hidden" name="csrf" value="${escape(details.csrf)}">
@@ -767,6 +923,7 @@ function interactionScreen() {
   </form>`
       : `<h2>${itself ? "Continue to Fidj" : "Continue to " + asking}</h2>
   <p class="signin-lead">${itself ? "Fidj is asking for the information below. Optional privacy choices stay separate for every app, including this one." : `${asking} is asking for the information below. Optional privacy choices stay separate, and you can change them in Fidj at any time.`}</p>
+  ${returnNotice(itself ? "Fidj" : asking)}
   ${notice}
   <ul class="scope-list">${details.scopes
     .filter((scope) => scopeMeaning[scope])
@@ -883,38 +1040,56 @@ function wireAccount(route: string) {
     });
   });
 }
-window.addEventListener("hashchange", render);
-render();
-if (readInteraction()) {
-  render();
-  void loadInteraction()
-    .catch((error) => {
-      interactionFailed = true;
-      failed = true;
-      message =
-        error instanceof Error
-          ? error.message
-          : "This sign-in could not be loaded. Start again from the app.";
-    })
-    .finally(render);
+// This document is the window the entry opened, and the provider has just
+// answered into it. Its only job left is to hand that answer to the page that
+// opened it and get out of the way — never to complete the sign-in, because the
+// transaction the answer has to match belongs to that other page.
+if (relayProviderAnswer()) {
+  root.innerHTML = '<p role="status">Signing you in…</p>';
+  // A window the browser will not close is not a window that was scripted open,
+  // so this is an ordinary return from the provider after all. Finish it here
+  // rather than leave somebody looking at one sentence forever.
+  window.setTimeout(() => {
+    if (!window.closed) boot();
+  }, 800);
+} else {
+  boot();
 }
-void action(async () => {
-  if (interactionId) return;
-  if (oidc && new URL(window.location.href).searchParams.has("state")) {
-    const callback = new URL(window.location.href);
-    window.history.replaceState(null, "", window.location.pathname + "#/content");
-    await oidc.completeLogin(callback);
-    try {
-      sessionStorage.removeItem("fidj.interaction.email");
-    } catch {}
+
+function boot() {
+  window.addEventListener("hashchange", render);
+  render();
+  if (readInteraction()) {
+    render();
+    void loadInteraction()
+      .catch((error) => {
+        interactionFailed = true;
+        failed = true;
+        message =
+          error instanceof Error
+            ? error.message
+            : "This sign-in could not be loaded. Start again from the app.";
+      })
+      .finally(render);
   }
-  await sdk.init(config.appId, {
-    apiEndpoint: config.apiEndpoint,
-    prod: !config.localDemo,
+  void action(async () => {
+    if (interactionId) return;
+    if (oidc && new URL(window.location.href).searchParams.has("state")) {
+      const callback = new URL(window.location.href);
+      window.history.replaceState(null, "", window.location.pathname + "#/content");
+      await oidc.completeLogin(callback);
+      try {
+        sessionStorage.removeItem("fidj.interaction.email");
+      } catch {}
+    }
+    await sdk.init(config.appId, {
+      apiEndpoint: config.apiEndpoint,
+      prod: !config.localDemo,
+    });
+    if (sdk.isLoggedIn()) {
+      await refresh();
+      if (!moduleRoute() && !accountRoutes.includes(currentRoute()))
+        navigate("content");
+    }
   });
-  if (sdk.isLoggedIn()) {
-    await refresh();
-    if (!moduleRoute() && !accountRoutes.includes(currentRoute()))
-      navigate("content");
-  }
-});
+}
