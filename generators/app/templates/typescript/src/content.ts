@@ -1,4 +1,4 @@
-import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn} from "./service-agreement";
+import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, signInHint} from "./service-agreement";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
 import "./style.css";
@@ -414,6 +414,13 @@ function render() {
     anonymous = true;
     navigate("content");
   });
+  // A remembered address is how the entry offers "Continue as <them>". Every
+  // sign-out this shell owns forgets it, because on a shared computer still
+  // being offered by name after leaving is the whole difference. A console that
+  // signs out through the SDK takes another path and forgot nothing, so the
+  // entry kept offering somebody who had left — the SDK records that this
+  // browser asked to be signed out, and that is the same statement.
+  if (oidc?.signedOutHere()) forgetSignIn(config.appId);
   if (oidc && element("signin"))
     element("signin")!.innerHTML = providerEntry(
       config.title,
@@ -497,7 +504,18 @@ function render() {
       return;
     }
     void action(async () => {
-      if (oidc && throughFidj) {window.location.assign(await oidc.beginLogin()); return;}
+      if (oidc && throughFidj) {
+        // "Continue as <them>" promises to carry on as that person, and handed
+        // them over to an empty email field — so the promise cost a second
+        // typing of the address it had just shown. The screen prefills from
+        // this, and nothing was writing it.
+        try {
+          const remembered = signInHint(config.appId);
+          if (remembered) sessionStorage.setItem("fidj.interaction.email", remembered);
+        } catch {}
+        window.location.assign(await oidc.beginLogin());
+        return;
+      }
       if (oidc && (!email || !password)) {
         throw new Error("Enter your email and password, or sign in with Fidj.");
       }

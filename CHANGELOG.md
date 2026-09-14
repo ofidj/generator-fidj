@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.7.5] - 2026-09-14
+
+- Stop offering by name somebody who signed out. The entry remembers the last
+  address so it can say **Continue as <them>**, and every sign-out the shell owns
+  forgets it — on a shared computer that is the whole difference. A console that
+  signs out through the SDK takes another path and forgot nothing, so Fidj's own
+  entry kept offering a person who had left. The SDK records that this browser
+  asked to be signed out, and the entry now reads it.
+- Carry the address the button just showed. **Continue as <them>** handed the
+  person to a screen with an empty email field, so the promise cost a second
+  typing of the address it had displayed a moment earlier.
+
 ## [3.7.4] - 2026-09-14
 
 - Run the mounted app's scripts in the order they were inserted. A `<script>`
