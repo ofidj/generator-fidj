@@ -22,7 +22,9 @@
   "dependencies": {
     "yeoman-generator": "^4.12.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "knip": "^6.35.1"
+  },
   "eslintConfig": {
     "extends": "xo-space",
     "env": {
@@ -31,7 +33,8 @@
   },
   "repository": "https://github.com/ofidj/generator-fidj.git",
   "scripts": {
-    "test": "node --test test/*.test.cjs"
+    "test": "node --test test/*.test.cjs",
+    "bp:dead-code": "knip"
   },
   "license": "MIT",
   "bin": {
