@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.7.3] - 2026-09-14
+
+- Generated apps show the Fidj they run — `fidj@<version>`, taken from the SDK
+  they carry — instead of the day they were generated. Two apps generated a week
+  apart from the same SDK now say the same thing, and what they say can be
+  compared with `/v3/status`.
+- Release on the shared @ofidj version, which the app template's `@ofidj/node`
+  range names: that range is the version a generated app installs, and therefore
+  the version its badge claims.
+
 ## [1.8.0] - 2026-09-14
 
 - Do not hand a signed-out person straight back to the session they left. On

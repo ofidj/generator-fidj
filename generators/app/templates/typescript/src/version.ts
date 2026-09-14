@@ -1,9 +1,9 @@
 export function showVersionBadge(version: string, apiEndpoint?: string): void {
-  if (!/^\d{2}\.\d{2}\.\d{2}$/.test(version || "")) return;
+  if (!/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(version || "")) return;
   const badge = document.createElement("div");
   badge.className = "fidj-version";
-  badge.setAttribute("aria-label", `App version ${version}`);
-  badge.textContent = `v${version}`;
+  badge.setAttribute("aria-label", `Fidj version ${version}`);
+  badge.textContent = `fidj@${version}`;
   document.body.append(badge);
   if (apiEndpoint) {
     void fetch(`${apiEndpoint.replace(/\/$/, "")}/status`)
@@ -11,8 +11,8 @@ export function showVersionBadge(version: string, apiEndpoint?: string): void {
       .then(status => {
         const apiVersion = status?.version || status?.built;
         if (!apiVersion) return;
-        badge.textContent = `v${version} · API ${apiVersion}`;
-        badge.setAttribute("aria-label", `App version ${version}, API version ${apiVersion}`);
+        badge.textContent = `fidj@${version} · API ${apiVersion}`;
+        badge.setAttribute("aria-label", `Fidj version ${version}, API version ${apiVersion}`);
       })
       .catch(() => undefined);
   }

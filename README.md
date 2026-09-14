@@ -62,7 +62,16 @@ a style change lands here first.
 
 Generation writes `.env.example`, `.env` and public `app.config.json`. Static configuration is embedded at build time: regenerate/rebuild when changing endpoints. Notes server configuration is read at runtime. Do not place secrets in any public configuration or content input.
 
-For unpublished coordinated changes, build the sibling SDK and pass `--sdk-path` with its absolute `dist` path. Committed templates use registry dependency `@ofidj/node ^3.6.24`; a registry-only install is not validated until coordinated versions are published.
+For unpublished coordinated changes, build the sibling SDK and pass `--sdk-path` with its absolute `dist` path. Committed templates use registry dependency `@ofidj/node ^3.7.3`; a registry-only install is not validated until coordinated versions are published.
+
+Every generated app carries a fixed bottom-right badge naming the Fidj it runs:
+`fidj@<version>`, taken from the SDK it was generated with — the `--sdk-path`
+build when one is supplied, the template's `@ofidj/node` range otherwise — and
+written to `APP_VERSION` and `app.config.json`. On Fidj's own apps it also shows
+the version `/v3/status` answers with, so the two can be compared without
+translation. Keep that range on the version this generator releases: the
+workspace's `scripts/check-versions.py` and this package's own suite both refuse
+the mismatch.
 
 ## Real validation repository
 
