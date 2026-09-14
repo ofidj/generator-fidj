@@ -437,7 +437,14 @@ function render() {
     askedProvider = true;
     void (async () => {
       if (!(await providerRendersHere())) return;
-      window.location.assign(await oidc.beginLogin());
+      // Being recognised again is the one thing somebody who just signed out did
+      // not ask for, and this shortcut is what made a sign-out undoable by a page
+      // reload. Ending the provider session is what should make that impossible,
+      // and that call can be refused — so here the screen asks rather than
+      // assumes, until somebody signs in again.
+      window.location.assign(
+        await oidc.beginLogin(oidc.signedOutHere() ? { prompt: "login" } : {}),
+      );
     })();
   }
 

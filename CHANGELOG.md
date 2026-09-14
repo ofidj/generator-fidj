@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0] - 2026-09-14
+
+- Do not hand a signed-out person straight back to the session they left. On
+  Fidj itself the sign-in screen fetches the provider as soon as it renders, so
+  that what somebody sees is the credential form or their own name — and that
+  shortcut was also how a sign-out was undone by a page reload: the provider
+  still recognised the browser and answered with a code, no screen at all. The
+  automatic sign-in now asks for re-authentication when the SDK says this
+  browser just signed out, until somebody signs in again. Ending the provider
+  session is what should make it unnecessary, and that call can be refused.
+- Require `@ofidj/node` 3.6.30, which is where the shell reads that from.
+
 ## [1.7.0] - 2026-09-13
 
 - Offer a way out of being recognised. A live Fidj session means the screen asks
