@@ -269,6 +269,13 @@ function startModule() {
   for (const script of mount.scripts) {
     const element = document.createElement("script");
     if (script.module) element.type = "module";
+    // A script created here carries async = true by default, so these execute
+    // in whatever order the network returns them. An app's polyfills have to
+    // run before its entry point — Angular boots without Zone.js otherwise,
+    // throws NG0908 and paints nothing, which reaches the person as a blank
+    // page, intermittently, with nothing said. Clearing it restores the order
+    // they were inserted in, which is the order the app's own document had.
+    element.async = false;
     element.src = script.src;
     document.body.appendChild(element);
   }

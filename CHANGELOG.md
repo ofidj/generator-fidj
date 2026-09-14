@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.7.4] - 2026-09-14
+
+- Run the mounted app's scripts in the order they were inserted. A `<script>`
+  created in JavaScript carries `async = true` by default, so the shell's four
+  injected scripts raced: when the entry point won against the polyfills,
+  Angular booted without Zone.js, threw NG0908 and painted nothing. What reached
+  the person was a blank page, intermittently, with nothing said.
+
 ## [3.7.3] - 2026-09-14
 
 - Generated apps show the Fidj they run — `fidj@<version>`, taken from the SDK
