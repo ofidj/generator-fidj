@@ -308,6 +308,44 @@ function offerTheWindowBack(providerWindow: ProviderWindow) {
   waiting.insertAdjacentElement("afterend", cancel);
 }
 
+// Being recognised by Fidj is not the same as having signed in here. An app's
+// door writes the session the provider holds, and Fidj's own entry used to read
+// none of it — so somebody who had just joined an app was asked for a password
+// by the account provider itself, one screen later.
+//
+// `prompt=none` asks the provider to answer without showing anything: a code
+// when it knows this browser, `login_required` when it does not. Those are
+// exactly the two cases to tell apart, and neither costs a screen.
+//
+// Only where Fidj is the app. An app with a door of its own must keep it: taking
+// that door is where the app's own agreement is asked and recorded, and signing
+// somebody in around it would skip a decision they never made.
+const RECOGNITION_ASKED = "fidj.oidc.recognition-asked";
+// A page that is public is exactly where a session is not what somebody came
+// for. Asking there sent an anonymous visitor to the provider and back, and what
+// they had asked to read never rendered.
+const PUBLIC_ROUTE = "pub";
+async function askWhetherFidjKnowsThisBrowser() {
+  if (!oidc || !isFidjItself || sdk.isLoggedIn() || oidc.signedOutHere())
+    return false;
+  if ((moduleRoute() || "").split("/")[0] === PUBLIC_ROUTE) return false;
+  // Once per document: the answer comes back as a redirect to this same page,
+  // so without this a refusal would ask again, and again.
+  try {
+    if (sessionStorage.getItem(RECOGNITION_ASKED) === "true") return false;
+    sessionStorage.setItem(RECOGNITION_ASKED, "true");
+  } catch {
+    return false;
+  }
+  try {
+    window.location.assign(await oidc.beginLogin({ silent: true }));
+    return true;
+  } catch {
+    // No provider, or it would not say. The entry is still there to be used.
+    return false;
+  }
+}
+
 function signInThroughProvider(
   trigger: HTMLElement | null,
   options: { silent?: boolean; prompt?: string } = {},
@@ -1100,7 +1138,27 @@ function boot() {
     if (oidc && new URL(window.location.href).searchParams.has("state")) {
       const callback = new URL(window.location.href);
       window.history.replaceState(null, "", window.location.pathname + "#/content");
-      await oidc.completeLogin(callback);
+      try {
+        await oidc.completeLogin(callback);
+      } catch (refusal) {
+        const why = (refusal as {code?: string; silentRefusal?: boolean}) || {};
+        // A silent question answered "no" is an answer, not a failure. But the
+        // two ways of saying no mean opposite things here.
+        //
+        // `login_required` — the provider does not know this browser, and the
+        // entry is the right next screen.
+        //
+        // `consent_required` — it knows exactly who this is; what it has not got
+        // is this client's permission, because the account was made through
+        // another app and Fidj's console is a client of its own. Asking again
+        // without `prompt=none` gets the screen that collects it, and no
+        // password: the person already typed theirs once.
+        if (why.code === "consent_required") {
+          window.location.assign(await oidc.beginLogin());
+          return;
+        }
+        if (!why.silentRefusal) throw refusal;
+      }
       try {
         sessionStorage.removeItem("fidj.interaction.email");
       } catch {}
@@ -1113,6 +1171,9 @@ function boot() {
       await refresh();
       if (!moduleRoute() && !accountRoutes.includes(currentRoute()))
         navigate("content");
+      return;
     }
+    // Nothing held here. Fidj may still know this browser from an app.
+    await askWhetherFidjKnowsThisBrowser();
   });
 }
