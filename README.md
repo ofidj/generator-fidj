@@ -181,8 +181,8 @@ one, with its submit button read-only until the box is ticked.
 
 The agreement screen's markup, its loading and its disabled-button rule live in
 `@ofidj/entry` — one implementation for the app's own form, the composed Fidj
-console and the Fidj-hosted OIDC consent page — so an owner who publishes a new
-version changes one thing and every surface asks again.
+console and the Fidj-hosted consent page of the beta OIDC provider — so an owner
+who publishes a new version changes one thing and every surface asks again.
 Reading the agreement opens an in-app dialog; a failed load keeps that screen
 blocked and never the screen before it. Anonymous entry, when enabled, is not a
 login and records no acceptance.
