@@ -117,9 +117,9 @@ that belongs to Fidj rather than to the app — and it is the path where the app
 never sees a password. An app generated with `--signin both` keeps its own
 email-and-password form under an *Inline form* disclosure: opening it folds the
 Fidj door away, because the two are alternatives rather than a list. Whichever
-door is taken runs the same three screens — credentials, then email
-verification on the create path, then the agreement — so the button is a
-shortcut to the flow, not a different one.
+door is taken runs the same two screens — credentials, with the verification
+wait appearing beneath them on the create path, and then the agreement — so the
+button is a shortcut to the flow, not a different one.
 
 Pressing it opens Fidj in a browser window of its own rather than navigating
 away. Fidj's screens are served from another origin and refuse to be framed, so
@@ -173,11 +173,12 @@ A compatible issuer, REST API and registered callback without a fragment are pre
 
 [The workspace README](../README.md#entry-one-flow-the-same-everywhere) defines
 the flow every Fidj sign-in surface follows, and this generator owns the
-implementation the others render. In short: screen 1 asks for an email, a
-password, **Sign in** and **Create an account**, and gates neither; creating an
-account waits on a verification link; the agreement is its own screen, shown
-whenever the version recorded for this person and this app is not the current
-one, with its submit button read-only until the box is ticked.
+implementation the others render. In short: the first screen asks for an email,
+a password, **Sign in** and **Create an account**, and gates neither; creating an
+account grows a verification wait beneath that same form rather than replacing
+it; and the agreement is its own screen, shown whenever the version recorded for
+this person and this app is not the current one, with its submit button
+read-only until the box is ticked.
 
 The agreement screen's markup, its loading and its disabled-button rule live in
 `@ofidj/entry` — one implementation for the app's own form, the composed Fidj
@@ -187,7 +188,7 @@ Reading the agreement opens an in-app dialog; a failed load keeps that screen
 blocked and never the screen before it. Anonymous entry, when enabled, is not a
 login and records no acceptance.
 
-**Current generated output still asks on screen 1.** The content entry and the
+**Current generated output still asks on the credential screen.** The content entry and the
 `--signin both` disclosure both carry the checkbox beside the credentials, which
 is the arrangement the flow above replaces; `--signin button` already delegates
 the whole question to Fidj and needs no change. Note what the checkbox actually
