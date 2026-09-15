@@ -651,6 +651,29 @@ function render() {
       } catch (error) {
         throw new Error(signInErrorMessage(error));
       }
+      // Fidj collects the credential on its own page rather than sending itself
+      // through its own door, and that sign-in created no session the provider
+      // could see: the first app opened afterwards asked for the password again,
+      // by the account provider itself. This turns the sign-in the API has just
+      // verified into the session every other app is recognised by. Only Fidj
+      // asks — the API refuses any other app, because a session that speaks for
+      // every app must not be mintable by one that collects its own passwords.
+      if (isFidjItself) {
+        try {
+          await sdk.sendOnEndpoint({
+            verb: "POST",
+            key: "me",
+            relativePath: "oidc/session",
+            // The whole point of the call is the cookie it comes back with, and
+            // a cross-origin response's Set-Cookie is dropped without this.
+            withCredentials: true,
+          });
+        } catch {
+          // Being signed in here still worked. The person is inside Fidj; what
+          // they lose is being recognised by the next app without typing again,
+          // and that is not worth refusing them the console over.
+        }
+      }
       await refresh();
       anonymous = false;
       // A new account belongs where a returning one lands: inside the app.
