@@ -51,19 +51,28 @@ one.
 - `--logo <image>` and `--favicon <image>`: the app's own marks, copied into `public/brand/`. The logo sits beside the app name at the top of the sign-in panel; the favicon goes in the browser tab. Both fall back to the Fidj mark, so neither is ever blank. Accepts `.png`, `.svg`, `.gif`, `.jpg`, `.webp` or `.ico` under 512KB — an animated GIF works as a logo, and as a favicon in the browsers that animate one.
 - `--api-endpoint`: select the API (default: hosted sandbox).
 - `--sdk-path` or `FIDJ_SDK_DIR`: use a built local SDK during coordinated development.
+- `--entry-path` or `FIDJ_ENTRY_DIR`: same, for a built local `@ofidj/entry` — the sign-in and account screens, the agreement and the design system. Point it at that package's `dist`, as with the SDK.
 - `--local` or `FIDJ_LOCAL=true`: use the loopback API/console. Test credentials stay in the validation guide, outside the content app UI. Supply the matching local app ID; `FIDJ_APP_ID` can override it.
 - `--replace`: regenerate only a destination containing `.fidj-generated`; unmarked projects are protected.
 
-The generated shell paints from one design system: `src/tokens.css` holds every
-colour, family and radius, and `src/style.css` may not introduce a literal of
-its own. Fonts are self-hosted under `public/fonts` and served from the build
-manifest, so a generated site stays statically hostable and makes no
-third-party request on sign-in. fidj-app consumes the same tokens, which is why
-a style change lands here first.
+**The entry is a dependency, not a copy.** `@ofidj/entry` carries the sign-in
+and account screens, the service agreement, the provider window, the version
+badge and the design system; the generated app imports them the way it imports
+the SDK. They used to be files in this template, which meant the only way to
+ship a fix was to regenerate every app — and meant Fidj's own console had to be
+generated to reach them. A style change now lands in that package, and this
+template is what remains genuinely the generator's: the shells that hold the
+screens, the content app and the Notes app.
+
+The design system is `@ofidj/entry`'s `tokens.css` — every colour, family and
+radius — and its `style.css`, which may not introduce a literal of its own.
+Fonts are self-hosted under `public/fonts` and served from the build manifest,
+so a generated site stays statically hostable and makes no third-party request
+on sign-in.
 
 Generation writes `.env.example`, `.env` and public `app.config.json`. Static configuration is embedded at build time: regenerate/rebuild when changing endpoints. Notes server configuration is read at runtime. Do not place secrets in any public configuration or content input.
 
-For unpublished coordinated changes, build the sibling SDK and pass `--sdk-path` with its absolute `dist` path. Committed templates use registry dependency `@ofidj/node ^3.7.3`; a registry-only install is not validated until coordinated versions are published.
+For unpublished coordinated changes, build the sibling SDK and entry packages and pass `--sdk-path` and `--entry-path` with their absolute `dist` paths. Committed templates name registry ranges for both; a registry-only install is not validated until coordinated versions are published.
 
 Every generated app carries a fixed bottom-right badge naming the Fidj it runs:
 `fidj@<version>`, taken from the SDK it was generated with — the `--sdk-path`
@@ -171,9 +180,9 @@ whenever the version recorded for this person and this app is not the current
 one, with its submit button read-only until the box is ticked.
 
 The agreement screen's markup, its loading and its disabled-button rule live in
-`src/service-agreement.ts` — one implementation for the app's own form, the
-composed Fidj console and the Fidj-hosted OIDC consent page — so an owner who
-publishes a new version changes one thing and every surface asks again.
+`@ofidj/entry` — one implementation for the app's own form, the composed Fidj
+console and the Fidj-hosted OIDC consent page — so an owner who publishes a new
+version changes one thing and every surface asks again.
 Reading the agreement opens an in-app dialog; a failed load keeps that screen
 blocked and never the screen before it. Anonymous entry, when enabled, is not a
 login and records no acceptance.
@@ -181,7 +190,11 @@ login and records no acceptance.
 **Current generated output still asks on screen 1.** The content entry and the
 `--signin both` disclosure both carry the checkbox beside the credentials, which
 is the arrangement the flow above replaces; `--signin button` already delegates
-the whole question to Fidj and needs no change.
+the whole question to Fidj and needs no change. Note what the checkbox actually
+gates today: `bindAgreement` copies its *disabled* state onto the submit, so the
+button opens as soon as the agreement has loaded, ticked or not, and an unticked
+submit is refused afterwards by the caller's handler. The read-only submit the
+flow above describes is a change still to make, on the agreement screen.
 
 The text and version come from the app's public API metadata, not copied generator
 settings. The API records acceptance before issuing the app token, preserves

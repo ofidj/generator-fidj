@@ -1,8 +1,6 @@
-import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, showEmailEntry, type SigninShape} from "./service-agreement";
-import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "./provider-window";
+import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, showEmailEntry, openProviderWindow, relayProviderAnswer, showVersionBadge, type SigninShape, type ProviderWindow} from "@ofidj/entry";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
-import "./style.css";
-import { showVersionBadge } from "./version";
+import "@ofidj/entry/style.css";
 
 type Session = { username: string; roles: string[] };
 type Note = { id: string; title: string; body: string; createdAt: string };

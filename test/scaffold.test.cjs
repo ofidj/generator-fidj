@@ -27,14 +27,28 @@ test("generates a standalone typed client and server without private keys", () =
     assert.match(config.releaseVersion, /^\d+\.\d+\.\d+$/);
     assert.match(fs.readFileSync(path.join(output, ".env.example"), "utf8"), /APP_VERSION=\d+\.\d+\.\d+/);
     assert.match(main, /showVersionBadge/);
-    assert.ok(fs.existsSync(path.join(output, "src/version.ts")));
-    const agreement = fs.readFileSync(
-      path.join(output, "src/service-agreement.ts"),
-      "utf8",
+    // The entry — sign-in and account screens, the agreement, the design system
+    // — arrives as @ofidj/entry rather than as files copied into this app's
+    // own source, so what is asserted is the dependency and its absence from src.
+    const generated = JSON.parse(
+      fs.readFileSync(path.join(output, "package.json"), "utf8"),
     );
-    assert.match(agreement, /Retry/);
-    assert.match(agreement, /cannot reach Fidj/i);
-    assert.doesNotMatch(agreement, /Reload this page/);
+    assert.ok(
+      generated.dependencies["@ofidj/entry"],
+      "the generated app depends on @ofidj/entry",
+    );
+    for (const copied of [
+      "src/version.ts",
+      "src/service-agreement.ts",
+      "src/provider-window.ts",
+      "src/style.css",
+      "src/tokens.css",
+    ])
+      assert.ok(
+        !fs.existsSync(path.join(output, copied)),
+        `${copied} belongs to @ofidj/entry, not to the generated app`,
+      );
+    assert.match(main, /@ofidj\/entry/);
     assert.ok(fs.existsSync(path.join(output, ".gitignore")));
     assert.match(
       fs.readFileSync(path.join(output, ".env.example"), "utf8"),

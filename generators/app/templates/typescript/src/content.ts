@@ -1,9 +1,7 @@
-import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, signInHint, showEmailEntry, type SigninShape} from "./service-agreement";
-import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "./provider-window";
+import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, signInHint, showEmailEntry, openProviderWindow, relayProviderAnswer, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice, type SigninShape, type ProviderWindow} from "@ofidj/entry";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
-import "./style.css";
-import { showVersionBadge } from "./version";
+import "@ofidj/entry/style.css";
 
 const sdk = new FidjNodeService();
 const oidc = config.oidcIssuer ? new FidjOidcClient({issuer: config.oidcIssuer, clientId: config.appId, redirectUri: window.location.origin + window.location.pathname, apiEndpoint: config.apiEndpoint, storage: sessionStorage}) : null;
@@ -51,23 +49,8 @@ function currentRoute() {
   }
   return route;
 }
-const escape = (value: unknown) =>
-  String(value ?? "").replace(
-    /[&<>"']/g,
-    (char) =>
-      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
-        char
-      ]!,
-  );
 const element = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T | null;
-function badges() {
-  const entries: string[] = config.badges;
-  if (!entries?.length) return "";
-  return `<footer class="signin-badges">${entries
-    .map((entry) => `<span>${escape(entry)}</span>`)
-    .join("")}</footer>`;
-}
 // Signing out of this app revokes this app's access and nothing else: the Fidj
 // session survives, which is what makes the next app free to enter. That is a
 // good design and a bad surprise, so the notice says what actually happened and
@@ -145,16 +128,6 @@ function wireSignOut() {
   );
 }
 
-function highlights() {
-  const entries: Array<{ heading: string; body: string }> = config.highlights;
-  if (!entries?.length) return "";
-  return `<div class="signin-highlights">${entries
-    .map(
-      (entry, index) =>
-        `<article><p class="eyebrow">${String(index + 1).padStart(2, "0")}</p><h2>${escape(entry.heading)}</h2><p>${escape(entry.body)}</p></article>`,
-    )
-    .join("")}</div>`;
-}
 async function request(path: string, method = "GET", data?: unknown) {
   const token = await sdk.fidjGetIdToken();
   const response = await fetch(config.apiEndpoint + path, {
@@ -427,11 +400,6 @@ function navigate(route: string) {
   if (route !== currentRoute()) window.history.pushState(null, "", "#/" + route);
   if (!busy) render();
 }
-// The credential fields, in one place because the entry now shows them beside
-// the Fidj door rather than instead of it.
-function credentialFields() {
-  return `<label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" placeholder="you@company.com" autocomplete="username"><div class="field-head"><label for="password">Password</label><a href="#/forgot">Forgot?</a></div><div class="password-field"><input id="password" type="password" value="${escape(signInPassword)}" placeholder="••••••••••" autocomplete="current-password"><button type="button" id="reveal" aria-controls="password">Show</button></div><button class="primary" type="submit" name="entry" value="credentials">Continue</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button>`;
-}
 
 function moduleRoute() {
   const route = window.location.hash.slice(2).split("?")[0];
@@ -581,7 +549,7 @@ function render() {
     // The two ways out, last and together: back to the app, or out of this
     // session. Leaving the app itself is a different decision and stays where
     // the things it erases are listed.
-    root.innerHTML = `<section class="card content-account">${banner()}${accountForm("account")}${privacyBlock()}<div class="account-actions"><button id="continue-app" class="primary">Continue to ${escape(config.title)}</button><button id="exit">Sign out</button></div></section>`;
+    root.innerHTML = `<section class="card content-account">${banner()}${accountForm("account", {linkToken, verificationConfirmed, emailVerified, accountEmail})}${privacyBlock()}<div class="account-actions"><button id="continue-app" class="primary">Continue to ${escape(config.title)}</button><button id="exit">Sign out</button></div></section>`;
     renderNav("account");
     wireAccount("account");
     wireSignOut();
@@ -604,12 +572,12 @@ function render() {
   }
   // Only the entry reaches here now: the privacy screen and the account
   // screen became one, and that one is drawn above.
-  root.innerHTML = `<section class="signin-shell"><div class="signin-intro${config.highlights?.length ? "" : " is-plain"}"><header class="signin-masthead"><img class="app-mark" src="${escape(config.logo)}" alt=""><strong>${escape(config.title)}</strong></header>
+  root.innerHTML = `<section class="signin-shell"><div class="signin-intro${config.highlights?.length ? "" : " is-plain"}">${masthead(config.logo, config.title)}
   <div class="signin-identity"><h1>${escape(config.welcome)}</h1><p class="signin-description">${escape(config.description)}</p></div>
-  ${highlights()}</div>
+  ${highlightCells(config.highlights)}</div>
   <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin"><label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" placeholder="you@company.com" autocomplete="username" required><div class="field-head"><label for="password">Password</label><a href="#/forgot">Forgot?</a></div><div class="password-field"><input id="password" type="password" value="${escape(signInPassword)}" placeholder="••••••••••" autocomplete="current-password" required><button type="button" id="reveal" aria-controls="password">Show</button></div>${agreementMarkup()}<button class="primary" type="submit">Continue</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button></form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
   <div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>Your account, with Fidj</strong></p><p>Signing in creates one Fidj account you keep across every app that uses Fidj.</p><p>You choose what this app may store — and can export or erase it at any moment.</p></div></div>
-  ${badges()}</div></section>`;
+  ${badgeStrip(config.badges)}</div></section>`;
   wireNav();
   element("reveal")?.addEventListener("click", () => {
     const field = element<HTMLInputElement>("password");
@@ -635,7 +603,9 @@ function render() {
     element("signin")!.innerHTML = providerEntry(
       config.title,
       config.appId,
-      config.signin === "button" ? "" : credentialFields(),
+      config.signin === "button"
+        ? ""
+        : credentialFields({email: signInEmail, password: signInPassword}),
       isFidjItself,
       config.signin as SigninShape,
     );
@@ -829,8 +799,8 @@ function wirePrivacy() {
   });
 }
 
-// The four account screens. My account is shown inside the app; the recovery
-// and verification ones are reached without a session and stand alone.
+
+
 // What this app holds about the person signed in, and what they can do
 // about it. It used to be a screen of its own called My privacy, one tab
 // away from the account it was about — so a person looking for their own
@@ -857,17 +827,6 @@ function privacyBlock() {
   ${roles.includes("Owner") ? "<p>Resolve app ownership before leaving.</p>" : leaving ? '<p>Confirm departure: your membership and its Fidj-held data will be removed. Your other apps remain available.</p><button id="confirm-leave" class="danger">Confirm leaving this app</button><button id="cancel-leave">Keep my membership</button>' : '<button id="leave" class="danger">Leave this app</button>'}
   <p class="leaving"><a href="${escape(config.dashboardUrl)}/#/my" target="_blank" rel="noopener">Open Fidj to manage every app you use ↗</a><br><small>Fidj is the account provider behind ${escape(config.title)}. This opens it in a new tab; you stay signed in here.</small></p>`;
 }
-
-function accountForm(route: string) {
-  return    route === "forgot"
-      ? `<h2>Reset your password</h2><p>We’ll email you a link to choose a new password for your shared Fidj account.</p><form id="recovery"><label for="recovery-email">Email address</label><input id="recovery-email" type="email" autocomplete="email" required><button class="primary">Send reset link</button></form>`
-      : route === "reset"
-        ? `<h2>Choose a new password</h2><p>This changes your Fidj password across all your apps and signs out existing sessions.</p>${linkToken ? '<form id="recovery"><label for="new-password">New password</label><input id="new-password" type="password" autocomplete="new-password" minlength="12" required><label for="confirm-password">Confirm password</label><input id="confirm-password" type="password" autocomplete="new-password" minlength="12" required><p>Use at least 12 characters (up to 72 UTF-8 bytes).</p><button class="primary">Save new password</button></form>' : '<p>Request a new link if you no longer have an active reset link.</p><a href="#/forgot">Request a reset link</a>'}`
-        : route === "verify"
-          ? `<h2>${verificationConfirmed ? "Email verified" : "Verify your email"}</h2>${verificationConfirmed ? "<p>Your account is ready. Return to your app to continue.</p>" : "<p>Confirm that this email address belongs to you.</p>"}${verificationConfirmed ? "" : linkToken ? '<form id="recovery"><button class="primary">Confirm email address</button></form>' : "<p>Sign in to your account to request a new verification email.</p>"}`
-          : `<h2>My Fidj account</h2><p class="account-identity">Signed in as <strong>${escape(accountEmail)}</strong></p><p>Your identity is shared across your apps. Privacy choices remain separate for each app.</p><p id="verification-status">${emailVerified ? "Your email address is verified." : "Your email is not verified yet."}</p><button id="check-verification">Refresh verification status</button>${emailVerified ? "" : '<button id="resend-verification">Send verification email</button>'}<p><a href="#/forgot">Reset my password</a></p>`;
-}
-
 
 // ------------------------------------------------ signing in, for the provider
 //
@@ -961,13 +920,6 @@ async function loadInteraction() {
   interaction = (await response.json()) as Interaction;
 }
 
-// A window that opened on its own, over the page somebody was on, owes them the
-// way out before it asks for anything. Naming the app they came from is also the
-// only thing on this screen that they can check against what they were doing a
-// second ago — which is exactly what a page asking for a password should offer.
-function returnNotice(asking: string) {
-  return `<p class="signin-return" role="note">When you are done, this window closes and takes you back to ${escape(asking)}.</p>`;
-}
 
 function interactionScreen() {
   const details = interaction!;
@@ -1019,12 +971,12 @@ function interactionScreen() {
     <button class="quiet" type="submit" name="action" value="cancel" formnovalidate>Cancel and go back</button>
   </form>`;
 
-  root.innerHTML = `<section class="signin-shell"><div class="signin-intro is-plain"><header class="signin-masthead"><img class="app-mark" src="${escape(config.logo)}" alt=""><strong>${escape(config.title)}</strong></header>
+  root.innerHTML = `<section class="signin-shell"><div class="signin-intro is-plain">${masthead(config.logo, config.title)}
   <div class="signin-identity"><h1>Your identity.<br>Your choices.</h1><p class="signin-description">One account across every app that uses Fidj, and a separate set of choices for each one.</p></div>
-  ${highlights()}</div>
+  ${highlightCells(config.highlights)}</div>
   <div class="signin-form"><div>${body}</div>
   <div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>What Fidj is</strong></p><p>Fidj holds your account so each app does not have to. You can see every app you use, what it holds, and take it back — at any time.</p></div></div>
-  ${badges()}</section>`;
+  ${badgeStrip(config.badges)}</section>`;
 
   element("reveal")?.addEventListener("click", () => {
     const field = element<HTMLInputElement>("password");
@@ -1057,10 +1009,10 @@ function interactionScreen() {
 }
 
 function renderAccount(route: string) {
-  root.innerHTML = `<section class="signin-shell"><div class="signin-intro is-plain"><header class="signin-masthead"><img class="app-mark" src="${escape(config.logo)}" alt=""><strong>${escape(config.title)}</strong></header>
+  root.innerHTML = `<section class="signin-shell"><div class="signin-intro is-plain">${masthead(config.logo, config.title)}
   <div class="signin-identity"><h1>Your account.<br>Your control.</h1><p class="signin-description">Secure access to the apps you use, with one Fidj identity.</p></div>
   </div>
-  <div class="signin-form"><div>${banner()}${accountForm(route)}</div><footer class="signin-badges"><a href="#/signin">Back to sign in</a></footer></div></section>`;
+  <div class="signin-form"><div>${banner()}${accountForm(route, {linkToken, verificationConfirmed, emailVerified, accountEmail})}</div><footer class="signin-badges"><a href="#/signin">Back to sign in</a></footer></div></section>`;
   wireAccount(route);
 }
 

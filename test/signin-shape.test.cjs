@@ -72,49 +72,6 @@ test("the boolean it replaces still says what it used to say", () => {
   );
 });
 
-// What the three shapes actually put on the screen. The entry is a pure
-// function of the shape and the app's own fields, so it can be asked directly
-// rather than inferred from the source that produces it.
-//
-// It is TypeScript, and this reads it by stripping the types — on by default
-// from Node 22.18, which the validation matrix is above. An older runtime skips
-// rather than reporting a pass it did not earn.
-const stripsTypes = (() => {
-  const [major, minor] = process.versions.node.split(".").map(Number);
-  return major > 22 || (major === 22 && minor >= 18);
-})();
-
-test("the entry renders the shape it was given", {skip: stripsTypes ? false : "this runtime does not strip types"}, async () => {
-  const entry = await import(
-    "../generators/app/templates/typescript/src/service-agreement.ts"
-  );
-  const render = (shape) =>
-    entry.providerEntry("Test App", "fidj-example", "THE-APP-FIELDS", false, shape);
-  const hasDoor = (markup) => /name="entry" value="fidj"/.test(markup);
-  const hasFields = (markup) => markup.includes("THE-APP-FIELDS");
-  const hasDisclosure = (markup) => markup.includes('id="use-email"');
-
-  // The Fidj door and nothing else: no form, so nothing to fold it under.
-  const button = render("button");
-  assert.ok(hasDoor(button), "the button shape must offer the Fidj door");
-  assert.ok(!hasFields(button), "the button shape must not collect a password");
-  assert.ok(!hasDisclosure(button), "nothing to disclose");
-
-  // The app's own form and nothing else — and it says whose page holds the
-  // password, because on this path it is not only Fidj's.
-  const inline = render("inline");
-  assert.ok(!hasDoor(inline), "the inline shape offers no Fidj door");
-  assert.ok(hasFields(inline), "the inline shape must collect the credential");
-  assert.ok(!hasDisclosure(inline), "nothing to disclose");
-  assert.match(inline, /handles your password itself/);
-
-  // Both: the door leads, the form is one click under it.
-  const both = render("both");
-  assert.ok(hasDoor(both), "both shapes must offer the Fidj door");
-  assert.ok(hasFields(both), "both shapes must offer the app's form");
-  assert.ok(hasDisclosure(both), "the form is folded away under the door");
-  assert.ok(
-    both.indexOf('name="entry" value="fidj"') < both.indexOf("THE-APP-FIELDS"),
-    "the Fidj door leads",
-  );
-});
+// "the entry renders the shape it was given" moved to @ofidj/entry, which owns
+// providerEntry now. What stays here is the scaffolding question: that the
+// chosen shape reaches the generated app's configuration at all.

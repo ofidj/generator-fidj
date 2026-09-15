@@ -58,25 +58,9 @@ test("without a local SDK, claims the version the generated app will install", (
   }
 });
 
-test("the badge names Fidj and accepts a semantic version", () => {
-  const badge = fs.readFileSync(
-    path.join(__dirname, "../generators/app/templates/typescript/src/version.ts"),
-    "utf8",
-  );
-  assert.match(badge, /fidj@\$\{version\}/);
-  assert.doesNotMatch(badge, /\\d\{2\}\\\.\\d\{2\}/);
-  const guard = /if \(!(\/[^/]+\/)\.test/.exec(badge);
-  assert.ok(guard, "the badge still refuses a version it cannot read");
-  const pattern = new RegExp(guard[1].slice(1, -1));
-  assert.ok(pattern.test("3.7.3"), "a semantic version passes the guard");
-  assert.ok(pattern.test("3.7.3-rc.1"), "a prerelease passes the guard");
-  assert.ok(!pattern.test(""), "an app served without a version shows no badge");
-  assert.ok(!pattern.test("v3.7.3"), "the badge adds its own prefix");
-});
-
-// The badge claims the SDK version, so the version the generated app installs
-// has to be the version this generator ships with. Nothing else keeps the
-// claim honest once a release moves one of the two.
+// "the badge names Fidj and accepts a semantic version" moved to @ofidj/entry,
+// which owns showVersionBadge — and asks the function rather than reading its
+// guard back out of the source with a regex, which is all this could do.
 test("the generated app installs the SDK this generator was released with", () => {
   const generator = require("../package.json").version;
   const range = templatePackage.dependencies["@ofidj/node"];

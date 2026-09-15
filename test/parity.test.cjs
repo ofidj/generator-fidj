@@ -70,6 +70,7 @@ test("the Yeoman generator forwards every input to the scaffolder", () => {
     "replace",
     "moduleEntry",
     "sdkPath",
+    "entryPath",
     "apiEndpoint",
   ])
     assert.match(
