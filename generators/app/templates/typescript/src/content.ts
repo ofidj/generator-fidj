@@ -325,6 +325,22 @@ const RECOGNITION_ASKED = "fidj.oidc.recognition-asked";
 // for. Asking there sent an anonymous visitor to the provider and back, and what
 // they had asked to read never rendered.
 const PUBLIC_ROUTE = "pub";
+// Whether the question is still outstanding. Drawing the credential form and
+// then navigating to the provider loses whatever somebody had begun typing, so
+// the entry waits instead — the answer takes one redirect, not a wait worth a
+// spinner's worth of ceremony, and it says what it is doing.
+let recognising = false;
+function mightBeRecognised() {
+  if (!oidc || !isFidjItself) return false;
+  if ((moduleRoute() || "").split("/")[0] === PUBLIC_ROUTE) return false;
+  if (oidc.signedOutHere()) return false;
+  try {
+    return sessionStorage.getItem(RECOGNITION_ASKED) !== "true";
+  } catch {
+    return false;
+  }
+}
+
 async function askWhetherFidjKnowsThisBrowser() {
   if (!oidc || !isFidjItself || sdk.isLoggedIn() || oidc.signedOutHere())
     return false;
@@ -580,6 +596,10 @@ function render() {
   if (route === "content") {
     root.innerHTML = element<HTMLTemplateElement>("public-content")!.innerHTML;
     renderNav("content");
+    return;
+  }
+  if (recognising) {
+    root.innerHTML = `<section class="signin-shell"><div class="signin-form"><p role="status">Checking whether you are already signed in to Fidj…</p></div></section>`;
     return;
   }
   // Only the entry reaches here now: the privacy screen and the account
@@ -1119,6 +1139,7 @@ if (relayProviderAnswer()) {
 
 function boot() {
   window.addEventListener("hashchange", render);
+  recognising = mightBeRecognised();
   render();
   if (readInteraction()) {
     render();
@@ -1167,6 +1188,7 @@ function boot() {
       apiEndpoint: config.apiEndpoint,
       prod: !config.localDemo,
     });
+    recognising = recognising && !sdk.isLoggedIn();
     if (sdk.isLoggedIn()) {
       await refresh();
       if (!moduleRoute() && !accountRoutes.includes(currentRoute()))
@@ -1174,6 +1196,8 @@ function boot() {
       return;
     }
     // Nothing held here. Fidj may still know this browser from an app.
-    await askWhetherFidjKnowsThisBrowser();
+    if (await askWhetherFidjKnowsThisBrowser()) return;
+    recognising = false;
+    render();
   });
 }
