@@ -106,10 +106,11 @@ The generated content app opens on `/#/signin`. Sign in, or choose **Enter anony
 is the one control on the screen wearing `--fidj-accent`, because it is the one
 that belongs to Fidj rather than to the app — and it is the path where the app
 never sees a password. An app generated with `--signin both` keeps its own
-email-and-password form under an *Inline form* disclosure, with its service
-agreement: opening it folds the Fidj door away, because the two are alternatives
-rather than a list. That agreement gates the app's own door and nothing else, so
-an agreement that fails to load never shuts the Fidj door.
+email-and-password form under an *Inline form* disclosure: opening it folds the
+Fidj door away, because the two are alternatives rather than a list. Whichever
+door is taken runs the same three screens — credentials, then email
+verification on the create path, then the agreement — so the button is a
+shortcut to the flow, not a different one.
 
 Pressing it opens Fidj in a browser window of its own rather than navigating
 away. Fidj's screens are served from another origin and refuse to be framed, so
@@ -161,11 +162,26 @@ A compatible issuer, REST API and registered callback without a fragment are pre
 
 ## Required service agreement
 
-All generated sign-in and account-creation forms (content, composed Fidj and
-Notes) share an unchecked required agreement checkbox. Both submit buttons stay
-disabled until it is checked. Reading the agreement opens an in-app dialog;
-failed agreement loading keeps sign-in blocked. Anonymous entry, when enabled,
-is not a login and does not record agreement acceptance.
+[The workspace README](../README.md#entry-one-flow-the-same-everywhere) defines
+the flow every Fidj sign-in surface follows, and this generator owns the
+implementation the others render. In short: screen 1 asks for an email, a
+password, **Sign in** and **Create an account**, and gates neither; creating an
+account waits on a verification link; the agreement is its own screen, shown
+whenever the version recorded for this person and this app is not the current
+one, with its submit button read-only until the box is ticked.
+
+The agreement screen's markup, its loading and its disabled-button rule live in
+`src/service-agreement.ts` — one implementation for the app's own form, the
+composed Fidj console and the Fidj-hosted OIDC consent page — so an owner who
+publishes a new version changes one thing and every surface asks again.
+Reading the agreement opens an in-app dialog; a failed load keeps that screen
+blocked and never the screen before it. Anonymous entry, when enabled, is not a
+login and records no acceptance.
+
+**Current generated output still asks on screen 1.** The content entry and the
+`--signin both` disclosure both carry the checkbox beside the credentials, which
+is the arrangement the flow above replaces; `--signin button` already delegates
+the whole question to Fidj and needs no change.
 
 The text and version come from the app's public API metadata, not copied generator
 settings. The API records acceptance before issuing the app token, preserves
