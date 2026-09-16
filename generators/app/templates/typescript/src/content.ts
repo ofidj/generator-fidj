@@ -497,6 +497,8 @@ function render() {
   if (interactionId && !addressedInteraction()) {
     interactionId = "";
     interactionError = "";
+    interactionResent = false;
+    interactionNotYet = false;
     interaction = null;
     interactionFailed = false;
   }
@@ -970,6 +972,9 @@ function privacyBlock() {
 type Interaction = {
   prompt: string;
   csrf: string;
+  // The address this interaction is waiting on, when it is waiting rather than
+  // asking. Empty on every other screen.
+  awaiting?: string;
   app: { id: string; title: string; description: string };
   scopes: string[];
   termsUri: string;
@@ -978,6 +983,11 @@ type Interaction = {
 };
 let interactionId = "";
 let interactionError = "";
+// Whether the link was just sent again, or pressed Continue before opening it.
+// They are about the wait, not about the person, so they travel in the address
+// where the address itself does not.
+let interactionResent = false;
+let interactionNotYet = false;
 let interaction: Interaction | null = null;
 let interactionFailed = false;
 
@@ -1026,6 +1036,8 @@ function readInteraction() {
   if (!uid) return false;
   interactionId = uid;
   interactionError = parameters.get("error") || "";
+  interactionResent = parameters.get("resent") === "1";
+  interactionNotYet = parameters.get("notyet") === "1";
   // The id stays in the address while the screen is up. Taking it out looked
   // tidier and made the screen a trap: the address became "#/signin", so going
   // back to "#/signin" changed nothing, the document never reloaded, and the
@@ -1049,6 +1061,15 @@ async function loadInteraction() {
 }
 
 
+// What the wait has to say beyond the address, if anything.
+function interactionWaitNotice() {
+  if (interactionNotYet)
+    return '<p class="fineprint">The link has not been opened yet. Open it, then press Continue again.</p>';
+  if (interactionResent)
+    return '<p class="fineprint">The link was sent again. Only the newest one works.</p>';
+  return "";
+}
+
 function interactionScreen() {
   const details = interaction!;
   const asking = escape(details.app.title);
@@ -1067,8 +1088,24 @@ function interactionScreen() {
   // sees your password" about itself is nonsense in the same family as offering
   // to sign in with Fidj on Fidj.
   const itself = details.app.id === config.appId;
-  const body =
-    details.prompt === "login"
+  // The wait, when this interaction is waiting on an address rather than asking
+  // for anything. It is not a refusal and must not be drawn as one: the account
+  // exists, the link was sent, and what is left is opening it. The address is
+  // read from the interaction's own context rather than from the URL, so
+  // nothing about the person travels in an address bar.
+  const body = details.awaiting
+    ? `<h2>Check your email</h2>
+  <p class="signin-lead">Your account is created. Waiting for you to open the link sent to <strong>${escape(details.awaiting)}</strong>.</p>
+  ${returnNotice(itself ? "Fidj" : asking)}
+  <form method="post" action="${escape(action)}" id="interaction">
+    <input type="hidden" name="csrf" value="${escape(details.csrf)}">
+    <p class="fineprint">The link may take a minute, and it sometimes lands in spam. Open it, then come back here.</p>
+    ${interactionWaitNotice()}
+    <button class="primary" type="submit" name="action" value="continue">Continue</button>
+    <button class="secondary" type="submit" name="action" value="resend">Send the link again</button>
+    <button class="quiet" type="submit" name="action" value="cancel" formnovalidate>Cancel and go back</button>
+  </form>`
+    : details.prompt === "login"
       ? `<h2>${itself ? "Sign in to Fidj" : "Sign in to continue to " + asking}</h2>
   <p class="signin-lead">${itself ? "One account across every app that uses Fidj, and a separate set of choices for each one." : `This is Fidj, the account behind ${asking}. One account, and separate choices for every app that uses it — ${asking} never sees your password.`}</p>
   ${returnNotice(itself ? "Fidj" : asking)}
