@@ -1,4 +1,4 @@
-import {signInErrorMessage, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
+import {agreementModel, signInErrorMessage, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
 import {agreementScreen, bindAgreementScreen, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
@@ -979,6 +979,8 @@ type Interaction = {
   scopes: string[];
   termsUri: string;
   privacyUri: string;
+  // The agreement's own text, so it can be read here rather than in another tab.
+  agreement?: {version: string; text: string} | null;
   action: string;
 };
 let interactionId = "";
@@ -1129,7 +1131,8 @@ function interactionScreen() {
     .join("")}</ul>
   <form method="post" action="${escape(action)}" id="interaction">
     <input type="hidden" name="csrf" value="${escape(details.csrf)}">
-    <label class="agreement-choice"><input type="checkbox" name="terms" value="true" required><span>I accept ${asking}'s service agreement.</span></label>
+    <label class="agreement-choice"><input type="checkbox" name="terms" value="true" required><span>${escape(agreementModel(details.app.title, {}).checkboxLabel)}</span></label>
+    ${details.agreement ? `<details class="agreement"><summary>Read service agreement</summary><p class="fineprint">Version ${escape(details.agreement.version)}</p><p>${escape(details.agreement.text)}</p></details><p class="fineprint">Required to sign in. Optional data choices stay separate.</p>` : ""}
     ${details.termsUri ? `<p class="fineprint"><a href="${escape(details.termsUri)}" target="_blank" rel="noopener noreferrer">Service agreement</a>${details.privacyUri ? ` · <a href="${escape(details.privacyUri)}" target="_blank" rel="noopener noreferrer">Privacy notice</a>` : ""}</p>` : ""}
     <button class="primary" type="submit" name="action" value="continue">Allow and continue</button>
     <button class="quiet" type="submit" id="not-me" name="action" value="switch" formnovalidate>Not you? Sign in with another account</button>
