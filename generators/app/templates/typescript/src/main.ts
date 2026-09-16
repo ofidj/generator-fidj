@@ -1,4 +1,6 @@
-import {acceptedAgreement, agreementRequired, agreementFromRefusal, agreementScreen, bindAgreementScreen, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, showEmailEntry, openProviderWindow, relayProviderAnswer, showVersionBadge, type SigninShape, type ProviderWindow} from "@ofidj/entry";
+import {agreementRequired, agreementFromRefusal, signInErrorMessage, rememberSignIn, forgetSignIn, type SigninShape} from "@ofidj/entry";
+import {acceptedAgreement, agreementScreen, bindAgreementScreen, providerEntry, showEmailEntry, showVersionBadge} from "@ofidj/entry/dom";
+import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import "@ofidj/entry/style.css";
 

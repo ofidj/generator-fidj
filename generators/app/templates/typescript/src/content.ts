@@ -1,4 +1,6 @@
-import {signInErrorMessage, agreementRequired, agreementFromRefusal, verificationPending, agreementScreen, bindAgreementScreen, acceptedAgreement, verificationWait, pollVerification, providerEntry, rememberSignIn, forgetSignIn, signInHint, showEmailEntry, openProviderWindow, relayProviderAnswer, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice, type SigninShape, type ProviderWindow} from "@ofidj/entry";
+import {signInErrorMessage, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
+import {agreementScreen, bindAgreementScreen, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice} from "@ofidj/entry/dom";
+import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
 import "@ofidj/entry/style.css";
@@ -312,6 +314,19 @@ let recognising = false;
 function mightBeRecognised() {
   if (!oidc || !isFidjItself) return false;
   if ((moduleRoute() || "").split("/")[0] === PUBLIC_ROUTE) return false;
+  // Not on a screen somebody was sent to by a link.
+  //
+  // Asking the provider is a navigation: it leaves this address and comes back
+  // at the redirect URI, without the hash the link carried. On these routes the
+  // hash is the point — it holds a token that works once — so asking spent the
+  // link and dropped the person on the entry, with nothing to show for having
+  // opened their mail.
+  //
+  // It hid well. Every other way of reaching these screens comes from a page
+  // that already asked once and recorded it below, and the ask is once per
+  // document; only a tab that has never seen Fidj fires it here, which is
+  // exactly the tab a mail client opens and the one nothing exercised.
+  if (["forgot", "reset", "verify"].includes(currentRoute())) return false;
   if (oidc.signedOutHere()) return false;
   try {
     return sessionStorage.getItem(RECOGNITION_ASKED) !== "true";
@@ -324,6 +339,19 @@ async function askWhetherFidjKnowsThisBrowser() {
   if (!oidc || !isFidjItself || sdk.isLoggedIn() || oidc.signedOutHere())
     return false;
   if ((moduleRoute() || "").split("/")[0] === PUBLIC_ROUTE) return false;
+  // Not on a screen somebody was sent to by a link.
+  //
+  // Asking the provider is a navigation: it leaves this address and comes back
+  // at the redirect URI, without the hash the link carried. On these routes the
+  // hash is the point — it holds a token that works once — so asking spent the
+  // link and dropped the person on the entry, with nothing to show for having
+  // opened their mail.
+  //
+  // It hid well. Every other way of reaching these screens comes from a page
+  // that already asked once and recorded it below, and the ask is once per
+  // document; only a tab that has never seen Fidj fires it here, which is
+  // exactly the tab a mail client opens and the one nothing exercised.
+  if (["forgot", "reset", "verify"].includes(currentRoute())) return false;
   // Once per document: the answer comes back as a redirect to this same page,
   // so without this a refusal would ask again, and again.
   try {
