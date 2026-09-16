@@ -1,4 +1,4 @@
-import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, signInHint, showEmailEntry, openProviderWindow, relayProviderAnswer, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice, type SigninShape, type ProviderWindow} from "@ofidj/entry";
+import {signInErrorMessage, agreementRequired, agreementFromRefusal, verificationPending, agreementScreen, bindAgreementScreen, acceptedAgreement, verificationWait, pollVerification, providerEntry, rememberSignIn, forgetSignIn, signInHint, showEmailEntry, openProviderWindow, relayProviderAnswer, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice, type SigninShape, type ProviderWindow} from "@ofidj/entry";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
 import "@ofidj/entry/style.css";
@@ -27,7 +27,13 @@ let busy = false;
 let leaving = false;
 let signInEmail = "";
 let signInPassword = "";
-let signInAgreementAccepted = false;
+// The agreement this app is owed, once the API has said so, and the address a
+// just-created account is waiting on. Only one of them is ever set.
+let pendingAgreement: {version: string; text: string} | null = null;
+let awaitingVerification = "";
+let verificationResent = false;
+let verificationNotice = "";
+let stopWatchingVerification: (() => void) | null = null;
 // Who is signed in, as this app's own membership answers it. The bar names them
 // and the account screen says it again where it can be checked; the ID token of
 // a code flow carries only a subject, so this comes from the membership.
@@ -575,7 +581,7 @@ function render() {
   root.innerHTML = `<section class="signin-shell"><div class="signin-intro${config.highlights?.length ? "" : " is-plain"}">${masthead(config.logo, config.title)}
   <div class="signin-identity"><h1>${escape(config.welcome)}</h1><p class="signin-description">${escape(config.description)}</p></div>
   ${highlightCells(config.highlights)}</div>
-  <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin"><label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" placeholder="you@company.com" autocomplete="username" required><div class="field-head"><label for="password">Password</label><a href="#/forgot">Forgot?</a></div><div class="password-field"><input id="password" type="password" value="${escape(signInPassword)}" placeholder="••••••••••" autocomplete="current-password" required><button type="button" id="reveal" aria-controls="password">Show</button></div>${agreementMarkup()}<button class="primary" type="submit">Continue</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button></form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
+  <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin"><label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" placeholder="you@company.com" autocomplete="username" required><div class="field-head"><label for="password">Password</label><a href="#/forgot">Forgot?</a></div><div class="password-field"><input id="password" type="password" value="${escape(signInPassword)}" placeholder="••••••••••" autocomplete="current-password" required><button type="button" id="reveal" aria-controls="password">Show</button></div><button class="primary" type="submit">Sign in</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button></form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
   <div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>Your account, with Fidj</strong></p><p>Signing in creates one Fidj account you keep across every app that uses Fidj.</p><p>You choose what this app may store — and can export or erase it at any moment.</p></div></div>
   ${badgeStrip(config.badges)}</div></section>`;
   wireNav();
@@ -609,10 +615,17 @@ function render() {
       isFidjItself,
       config.signin as SigninShape,
     );
+  // The agreement, when the API has said this app is owed one. It takes the
+  // form's place rather than sitting under it: the credentials were accepted,
+  // and what is left is a decision about this app.
+  if (pendingAgreement && element("signin")) {
+    element("signin")!.innerHTML = agreementScreen(config.title, pendingAgreement);
+    bindAgreementScreen(element<HTMLFormElement>("signin"));
+  }
   // The app's own form, for whoever came to type a password. Folded away rather
   // than removed: the door above it is the one to take, and the person who
   // wants this one is one click from it.
-  if (emailEntryOpen) showEmailEntry(true);
+  if (!pendingAgreement && emailEntryOpen) showEmailEntry(true);
   element("use-email")?.addEventListener("click", () => {
     emailEntryOpen = !emailEntryOpen;
     showEmailEntry(emailEntryOpen, true);
@@ -632,31 +645,61 @@ function render() {
     }
     render();
   });
-  void bindAgreement(element<HTMLFormElement>("signin"), config.title, config.apiEndpoint, config.appId, signInAgreementAccepted);
+  // The wait a just-created account owes its address, under the form that
+  // created it — not a screen, because nobody was taken anywhere.
+  if (awaitingVerification)
+    element("signin")?.insertAdjacentHTML(
+      "beforeend",
+      verificationWait({
+        email: awaitingVerification,
+        resent: verificationResent,
+        error: verificationNotice,
+      }),
+    );
+  element("resend-verification")?.addEventListener("click", () =>
+    void action(async () => {
+      verificationResent = false;
+      verificationNotice = "";
+      try {
+        await sdk.resendVerification();
+        verificationResent = true;
+      } catch {
+        // No session yet — the account was created and never signed in, which
+        // is the whole point of this screen. Creating it again with the same
+        // address is what sends another link.
+        verificationNotice =
+          "Press Create an account again to send another link.";
+      }
+    }),
+  );
   element<HTMLFormElement>("signin")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const email = element<HTMLInputElement>("email")?.value || "";
     const password = element<HTMLInputElement>("password")?.value || "";
-    const agreement = element<HTMLInputElement>("service-agreement");
+    const submitter = event.submitter as HTMLButtonElement | null;
+    // Answering the agreement screen. The credentials are the ones already
+    // accepted, so they are not re-read from a form that no longer shows them.
+    if (pendingAgreement) {
+      const acceptance = acceptedAgreement(
+        event.currentTarget as HTMLFormElement,
+      );
+      if (!acceptance) return;
+      submitter?.setAttribute("data-busy", "true");
+      void action(async () => {
+        if (
+          await refusedBeforeSignIn(signInEmail, signInPassword, false, acceptance)
+        )
+          return;
+        await completeSignIn();
+      });
+      return;
+    }
     signInEmail = email;
     signInPassword = password;
-    signInAgreementAccepted = agreement?.checked === true;
-    const acceptance = acceptedAgreement(event.currentTarget as HTMLFormElement);
-    const submitter = event.submitter as HTMLButtonElement | null;
     const signup = submitter?.name === "signup";
     // Which door was used. The Fidj one leaves for the provider; the credential
     // one signs in here, which is why it is the app's own form and not Fidj's.
     const throughFidj = submitter?.name === "entry" && submitter.value === "fidj";
-    // Only the credential door is gated here. The Fidj one is about to be asked
-    // the same question on the screen that names this app, where the answer is
-    // recorded with its version — so asking first cost a second click and kept
-    // nothing.
-    if (!throughFidj && !acceptance) {
-      failed = true;
-      message = "Please accept the service agreement before continuing.";
-      render();
-      return;
-    }
     if (oidc && throughFidj) {
       // "Continue as <them>" promises to carry on as that person, and handed
       // them over to an empty email field — so the promise cost a second
@@ -674,11 +717,69 @@ function render() {
       if (oidc && (!email || !password)) {
         throw new Error("Enter your email and password, or sign in with Fidj.");
       }
-      try {
-        await sdk.login(email, password, { autoSignup: signup, ...acceptance });
-      } catch (error) {
-        throw new Error(signInErrorMessage(error));
+      if (await refusedBeforeSignIn(email, password, signup)) return;
+      await completeSignIn();
+    });
+  });
+}
+
+// The API decides what the entry owes somebody next: a session, the agreement it
+// has not recorded for this app, or a wait on an address nobody has proved they
+// own. Returns true when it answered with a screen rather than a session.
+async function refusedBeforeSignIn(
+  email: string,
+  password: string,
+  signup: boolean,
+  acceptance?: {termsAccepted: boolean; termsVersion: string},
+): Promise<boolean> {
+  try {
+    await sdk.login(email, password, {autoSignup: signup, ...acceptance});
+    pendingAgreement = null;
+    awaitingVerification = "";
+    return false;
+  } catch (error) {
+    const created = verificationPending(error);
+    if (created) {
+      awaitingVerification = created.email || email;
+      verificationResent = false;
+      verificationNotice = "";
+      return true;
+    }
+    if (agreementRequired(error)) {
+      pendingAgreement = agreementFromRefusal(error) || (await readAgreement());
+      if (!pendingAgreement) {
+        throw new Error("We cannot reach Fidj right now. Please try again.");
       }
+      return true;
+    }
+    throw new Error(signInErrorMessage(error));
+  }
+}
+
+// An API that refused without saying which agreement it wanted. Older ones
+// cannot say, so the app is asked directly; it is the same agreement unless the
+// owner published between the two calls.
+async function readAgreement() {
+  try {
+    const response = await fetch(
+      `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}`,
+      {signal: AbortSignal.timeout(10000)},
+    );
+    if (!response.ok) return null;
+    const agreement = (await response.json()).app?.agreement;
+    return typeof agreement?.version === "string" &&
+      agreement.version &&
+      typeof agreement?.text === "string" &&
+      agreement.text
+      ? {version: agreement.version, text: agreement.text}
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function completeSignIn() {
+  return (async () => {
       // Fidj collects the credential on its own page rather than sending itself
       // through its own door, and that sign-in created no session the provider
       // could see: the first app opened afterwards asked for the password again,
@@ -704,12 +805,11 @@ function render() {
       }
       await refresh();
       anonymous = false;
-      // A new account belongs where a returning one lands: inside the app.
-      // Sending it to the account card instead dropped people who had just
-      // signed up on the shell, one click short of the app they came for.
-      navigate("content");
-    });
-  });
+    // A new account belongs where a returning one lands: inside the app.
+    // Sending it to the account card instead dropped people who had just
+    // signed up on the shell, one click short of the app they came for.
+    navigate("content");
+  })();
 }
 
 // Everything the account screen lets a person do about what this app holds:

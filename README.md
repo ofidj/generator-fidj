@@ -184,18 +184,13 @@ The agreement screen's markup, its loading and its disabled-button rule live in
 `@ofidj/entry` — one implementation for the app's own form, the composed Fidj
 console and the Fidj-hosted consent page of the beta OIDC provider — so an owner
 who publishes a new version changes one thing and every surface asks again.
-Reading the agreement opens an in-app dialog; a failed load keeps that screen
-blocked and never the screen before it. Anonymous entry, when enabled, is not a
-login and records no acceptance.
+Anonymous entry, when enabled, is not a login and records no acceptance.
 
-**Current generated output still asks on the credential screen.** The content entry and the
-`--signin both` disclosure both carry the checkbox beside the credentials, which
-is the arrangement the flow above replaces; `--signin button` already delegates
-the whole question to Fidj and needs no change. Note what the checkbox actually
-gates today: `bindAgreement` copies its *disabled* state onto the submit, so the
-button opens as soon as the agreement has loaded, ticked or not, and an unticked
-submit is refused afterwards by the caller's handler. The read-only submit the
-flow above describes is a change still to make, on the agreement screen.
+Both generated entries render this. The content app and the Notes starter lost
+their checkbox beside the credentials and their local gate; each calls `login`,
+and the API's `409 agreement_required` is what puts the agreement screen on
+screen, carrying the version it compared against. `--signin button` delegates
+the whole question to Fidj and never had one.
 
 The text and version come from the app's public API metadata, not copied generator
 settings. The API records acceptance before issuing the app token, preserves

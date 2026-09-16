@@ -1,4 +1,4 @@
-import {agreementMarkup, bindAgreement, acceptedAgreement, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, showEmailEntry, openProviderWindow, relayProviderAnswer, showVersionBadge, type SigninShape, type ProviderWindow} from "@ofidj/entry";
+import {acceptedAgreement, agreementRequired, agreementFromRefusal, agreementScreen, bindAgreementScreen, signInErrorMessage, providerEntry, rememberSignIn, forgetSignIn, showEmailEntry, openProviderWindow, relayProviderAnswer, showVersionBadge, type SigninShape, type ProviderWindow} from "@ofidj/entry";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import "@ofidj/entry/style.css";
 
@@ -37,7 +37,9 @@ let busy = false;
 let leaving = false;
 let signInEmail = "";
 let signInPassword = "";
-let signInAgreementAccepted = false;
+// The agreement this app is owed, once the API has said so. There is no
+// account creation here, so there is no verification wait to hold either.
+let pendingAgreement: {version: string; text: string} | null = null;
 // Whether the person asked for the app's own form: the entry is rebuilt on every
 // render, and a refused sign-in is a render, so it has to be remembered or the
 // form folds away under the complaint about it.
@@ -181,6 +183,29 @@ async function action(task: () => Promise<void>) {
     render();
   }
 }
+// The API decides whether this is a session or the agreement it has not
+// recorded for this app. Returns true when it answered with a screen.
+async function refusedBeforeSignIn(
+  email: string,
+  password: string,
+  acceptance?: {termsAccepted: boolean; termsVersion: string},
+): Promise<boolean> {
+  try {
+    await sdk.login(email, password, {autoSignup: false, ...acceptance});
+    pendingAgreement = null;
+    return false;
+  } catch (reason) {
+    if (agreementRequired(reason)) {
+      pendingAgreement = agreementFromRefusal(reason);
+      if (!pendingAgreement) {
+        throw new Error("We cannot reach Fidj right now. Please try again.");
+      }
+      return true;
+    }
+    throw new Error(signInErrorMessage(reason));
+  }
+}
+
 function render() {
   document.title = settings.title + " · Fidj";
   const canWrite = session?.roles.some((role) =>
@@ -190,7 +215,7 @@ function render() {
   <main>${notice ? `<p class="notice" role="status">${escape(notice)}</p>` : ""}${error ? `<p class="error" role="alert">${escape(error)}</p>` : ""}
   ${
     !session
-      ? `<section class="welcome"><div><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>Good ideas<br>start here.</h1><p>Keep your notes together, with access you understand and privacy you control.</p><div class="promise"><img src="/fidj-logo.png" alt=""><span>Your account connects through Fidj.<br>Your choices belong to this app.</span></div></div><form id="signin" class="card"><h2>Welcome to ${escape(settings.title)}</h2>${oidc ? providerEntry(settings.title, settings.appId, settings.signin === "button" ? "" : credentialFields(), false, settings.signin || "button") : `<p>Sign in with your Fidj account.</p>${credentialFields()}${agreementMarkup()}<button class="primary" type="submit">Continue</button>${settings.localDemo ? `<div class="demo"><strong>Try the local example</strong><p>Alex owns the app. Maya and Sam start with the Free role.</p><button type="button" data-demo="alex">Alex · owner</button><button type="button" data-demo="maya">Maya · member</button><button type="button" data-demo="sam">Sam · member</button></div>` : ""}`}</form></section>`
+      ? `<section class="welcome"><div><p class="eyebrow">A LITTLE SPACE FOR YOUR IDEAS</p><h1>Good ideas<br>start here.</h1><p>Keep your notes together, with access you understand and privacy you control.</p><div class="promise"><img src="/fidj-logo.png" alt=""><span>Your account connects through Fidj.<br>Your choices belong to this app.</span></div></div><form id="signin" class="card"><h2>Welcome to ${escape(settings.title)}</h2>${oidc ? providerEntry(settings.title, settings.appId, settings.signin === "button" ? "" : credentialFields(), false, settings.signin || "button") : `<p>Sign in with your Fidj account.</p>${credentialFields()}<button class="primary" type="submit">Sign in</button>${settings.localDemo ? `<div class="demo"><strong>Try the local example</strong><p>Alex owns the app. Maya and Sam start with the Free role.</p><button type="button" data-demo="alex">Alex · owner</button><button type="button" data-demo="maya">Maya · member</button><button type="button" data-demo="sam">Sam · member</button></div>` : ""}`}</form></section>`
       : `
   <div class="page-heading"><div><p class="eyebrow">YOUR WORKSPACE</p><h1>A place to think.</h1><p>${escape(session.username)} <span class="roles">${session.roles.map(escape).join(" · ") || "No assigned roles"}</span></p></div><button id="signout">Sign out</button></div>
   <nav><button id="workspace-tab" class="${view === "workspace" ? "selected" : ""}">My notes</button><button id="privacy-tab" class="${view === "privacy" ? "selected" : ""}">My privacy</button><button id="refresh">Refresh access</button></nav>
@@ -212,31 +237,35 @@ function render() {
   }`
   }
   <footer>Built with Fidj · One identity. Separate choices for every app.</footer></main>`;
-  void bindAgreement(el<HTMLFormElement>("signin"), settings.title, settings.apiEndpoint, settings.appId, signInAgreementAccepted);
+  // The agreement takes the form's place once the API says this app is owed one.
+  if (pendingAgreement && el("signin")) {
+    el("signin")!.innerHTML = agreementScreen(settings.title, pendingAgreement);
+    bindAgreementScreen(el<HTMLFormElement>("signin"));
+  }
   // The app's own form, folded away under the Fidj door rather than beside it.
-  if (emailEntryOpen) showEmailEntry(true);
+  if (!pendingAgreement && emailEntryOpen) showEmailEntry(true);
   el("use-email")?.addEventListener("click", () => {
     emailEntryOpen = !emailEntryOpen;
     showEmailEntry(emailEntryOpen, true);
   });
   el<HTMLFormElement>("signin")?.addEventListener("submit", (event) => {
     event.preventDefault();
+    // Answering the agreement screen: the credentials were accepted already and
+    // are not re-read from a form that no longer shows them.
+    if (pendingAgreement) {
+      const accepted = acceptedAgreement(event.currentTarget as HTMLFormElement);
+      if (!accepted) return;
+      void action(async () => {
+        if (await refusedBeforeSignIn(signInEmail, signInPassword, accepted))
+          return;
+        await load();
+      });
+      return;
+    }
     const email = el<HTMLInputElement>("email")?.value || "";
     const password = el<HTMLInputElement>("password")?.value || "";
     signInEmail = email;
     signInPassword = password;
-    signInAgreementAccepted =
-      el<HTMLInputElement>("service-agreement")?.checked === true;
-    const acceptance = acceptedAgreement(event.currentTarget as HTMLFormElement);
-    // Only a credential entry is gated here. When Fidj is the door, it asks for
-    // this app's agreement a moment later, on the screen that names the app,
-    // and records the acceptance with its version — so asking first cost a
-    // second click and kept nothing.
-    if (!oidc && !acceptance) {
-      error = "Please accept the service agreement before continuing.";
-      render();
-      return;
-    }
     // The Fidj door opens a window of its own, from inside this click: opening
     // it after the authorization URL has been fetched is what a popup blocker
     // refuses, because the browser no longer attributes it to the press.
@@ -245,11 +274,7 @@ function render() {
       return;
     }
     void action(async () => {
-      try {
-        await sdk.login(email, password, { autoSignup: false, ...acceptance });
-      } catch (reason) {
-        throw new Error(signInErrorMessage(reason));
-      }
+      if (await refusedBeforeSignIn(email, password)) return;
       await load();
     });
   });
