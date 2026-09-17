@@ -241,14 +241,39 @@ test("a local build uses the local provider, not the hosted one", () => {
   try {
     const output = scaffold(path.join(root, "app"), {
       appId: "fidj-example",
-      apiEndpoint: "https://api.example/v3",
-      oidcIssuer: "https://api.example/oidc",
+      apiEndpoint: "http://fidj.localhost:3201/v3",
+      oidcIssuer: "http://fidj.localhost:3201/oidc",
       local: true,
     });
     const config = JSON.parse(fs.readFileSync(path.join(output, "app.config.json")));
     assert.equal(config.apiEndpoint, "http://localhost:3201/v3");
     assert.equal(config.oidcIssuer, "http://localhost:3201/oidc");
   } finally {fs.rmSync(root, {recursive: true, force: true});}
+});
+
+test("a local stack may keep its UI and API on one named localhost", () => {
+  const previousApi = process.env.FIDJ_LOCAL_API_ENDPOINT;
+  const previousDashboard = process.env.FIDJ_LOCAL_DASHBOARD_URL;
+  process.env.FIDJ_LOCAL_API_ENDPOINT = "http://fidj.localhost:3201/v3";
+  process.env.FIDJ_LOCAL_DASHBOARD_URL = "http://fidj.localhost:4200";
+  try {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "fidj-named-local-"));
+    const output = scaffold(path.join(root, "app"), {
+      appId: "fidj-example",
+      apiEndpoint: "https://api.example/v3",
+      oidcIssuer: "https://api.example/oidc",
+      local: true,
+    });
+    const config = JSON.parse(fs.readFileSync(path.join(output, "app.config.json")));
+    assert.equal(config.apiEndpoint, "http://fidj.localhost:3201/v3");
+    assert.equal(config.oidcIssuer, "http://fidj.localhost:3201/oidc");
+    assert.equal(config.dashboardUrl, "http://fidj.localhost:4200");
+  } finally {
+    if (previousApi === undefined) delete process.env.FIDJ_LOCAL_API_ENDPOINT;
+    else process.env.FIDJ_LOCAL_API_ENDPOINT = previousApi;
+    if (previousDashboard === undefined) delete process.env.FIDJ_LOCAL_DASHBOARD_URL;
+    else process.env.FIDJ_LOCAL_DASHBOARD_URL = previousDashboard;
+  }
 });
 test("an app with its own backend can sign in through the provider", () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "fidj-oidc-app-"));

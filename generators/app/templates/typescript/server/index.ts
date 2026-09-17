@@ -342,7 +342,8 @@ if (require.main === module) {
     localDemo:
       process.env.LOCAL_DEMO === "true" &&
       host === "127.0.0.1" &&
-      ["localhost", "127.0.0.1"].includes(api.hostname),
+      (["localhost", "127.0.0.1"].includes(api.hostname) ||
+        api.hostname.endsWith(".localhost")),
   };
   createApp(settings, {
     dataDir: process.env.FIDJ_DATA_DIR,

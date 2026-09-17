@@ -1,5 +1,5 @@
 import {agreementRequired, agreementFromRefusal, signInErrorMessage, rememberSignIn, forgetSignIn, type SigninShape} from "@ofidj/entry";
-import {acceptedAgreement, agreementScreen, bindAgreementScreen, providerEntry, showEmailEntry, showVersionBadge} from "@ofidj/entry/dom";
+import {acceptedAgreement, agreementScreen, bindAgreementScreen, bindPasswordReveal, providerEntry, showEmailEntry, showVersionBadge} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import "@ofidj/entry/style.css";
@@ -79,7 +79,7 @@ async function api(path: string, method = "GET", data?: unknown) {
 // The credential fields, in one place because the entry shows them beside the
 // Fidj door rather than instead of it.
 function credentialFields() {
-  return `<label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" autocomplete="username"><label for="password">Password</label><input id="password" type="password" value="${escape(signInPassword)}" autocomplete="current-password"><button class="primary" type="submit" name="entry" value="credentials">Continue</button>`;
+  return `<label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" autocomplete="username"><label for="password">Password</label><div class="password-field"><input id="password" type="password" value="${escape(signInPassword)}" autocomplete="current-password"><button type="button" aria-controls="password">Show</button></div><button class="primary" type="submit" name="entry" value="credentials">Continue</button>`;
 }
 
 async function load() {
@@ -241,11 +241,12 @@ function render() {
   <footer>Built with Fidj · One identity. Separate choices for every app.</footer></main>`;
   // The agreement takes the form's place once the API says this app is owed one.
   if (pendingAgreement && el("signin")) {
-    el("signin")!.innerHTML = agreementScreen(settings.title, pendingAgreement);
+    el("signin")!.innerHTML = agreementScreen(settings.title, pendingAgreement, `${settings.apiEndpoint}/apps/${encodeURIComponent(settings.appId)}/agreements/${encodeURIComponent(pendingAgreement.version || "")}`);
     bindAgreementScreen(el<HTMLFormElement>("signin"));
   }
   // The app's own form, folded away under the Fidj door rather than beside it.
   if (!pendingAgreement && emailEntryOpen) showEmailEntry(true);
+  if (!pendingAgreement && el("signin")) bindPasswordReveal(el("signin")!);
   el("use-email")?.addEventListener("click", () => {
     emailEntryOpen = !emailEntryOpen;
     showEmailEntry(emailEntryOpen, true);

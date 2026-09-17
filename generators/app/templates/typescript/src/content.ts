@@ -1,5 +1,5 @@
 import {agreementModel, signInErrorMessage, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
-import {agreementScreen, bindAgreementScreen, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice} from "@ofidj/entry/dom";
+import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
@@ -123,7 +123,10 @@ function wireSignOut() {
     () =>
       void action(async () => {
         const wasSignedIn = signedIn;
-        if (signedIn) await sdk.logout(true);
+        if (signedIn) {
+          if (oidc?.hasSession()) await oidc.logout();
+          else await sdk.logout(true);
+        }
         forgetSignIn(config.appId);
         signedIn = false;
         anonymous = false;
@@ -611,18 +614,10 @@ function render() {
   root.innerHTML = `<section class="signin-shell"><div class="signin-intro${config.highlights?.length ? "" : " is-plain"}">${masthead(config.logo, config.title)}
   <div class="signin-identity"><h1>${escape(config.welcome)}</h1><p class="signin-description">${escape(config.description)}</p></div>
   ${highlightCells(config.highlights)}</div>
-  <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin"><label for="email">Email</label><input id="email" type="email" value="${escape(signInEmail)}" placeholder="you@company.com" autocomplete="username" required><div class="field-head"><label for="password">Password</label><a href="#/forgot">Forgot?</a></div><div class="password-field"><input id="password" type="password" value="${escape(signInPassword)}" placeholder="••••••••••" autocomplete="current-password" required><button type="button" id="reveal" aria-controls="password">Show</button></div><button class="primary" type="submit">Sign in</button><button class="secondary" type="submit" name="signup" value="true">Create an account</button></form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
+  <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin">${credentialFields({email: signInEmail, password: signInPassword})}</form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
   <div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>Your account, with Fidj</strong></p><p>Signing in creates one Fidj account you keep across every app that uses Fidj.</p><p>You choose what this app may store — and can export or erase it at any moment.</p></div></div>
   ${badgeStrip(config.badges)}</div></section>`;
   wireNav();
-  element("reveal")?.addEventListener("click", () => {
-    const field = element<HTMLInputElement>("password");
-    const button = element("reveal");
-    if (!field || !button) return;
-    const hidden = field.type === "password";
-    field.type = hidden ? "text" : "password";
-    button.textContent = hidden ? "Hide" : "Show";
-  });
   element("anonymous")?.addEventListener("click", () => {
     if (!config.allowAnonymous) return;
     anonymous = true;
@@ -649,13 +644,14 @@ function render() {
   // form's place rather than sitting under it: the credentials were accepted,
   // and what is left is a decision about this app.
   if (pendingAgreement && element("signin")) {
-    element("signin")!.innerHTML = agreementScreen(config.title, pendingAgreement);
+    element("signin")!.innerHTML = agreementScreen(config.title, pendingAgreement, `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}/agreements/${encodeURIComponent(pendingAgreement.version || "")}`);
     bindAgreementScreen(element<HTMLFormElement>("signin"));
   }
   // The app's own form, for whoever came to type a password. Folded away rather
   // than removed: the door above it is the one to take, and the person who
   // wants this one is one click from it.
   if (!pendingAgreement && emailEntryOpen) showEmailEntry(true);
+  if (!pendingAgreement && element("signin")) bindPasswordReveal(element("signin")!);
   element("use-email")?.addEventListener("click", () => {
     emailEntryOpen = !emailEntryOpen;
     showEmailEntry(emailEntryOpen, true);
@@ -819,14 +815,12 @@ function completeSignIn() {
       // every app must not be mintable by one that collects its own passwords.
       if (isFidjItself) {
         try {
-          await sdk.sendOnEndpoint({
-            verb: "POST",
-            key: "me",
-            relativePath: "oidc/session",
-            // The whole point of the call is the cookie it comes back with, and
-            // a cross-origin response's Set-Cookie is dropped without this.
-            withCredentials: true,
-          });
+          const transfer = await request("/me/oidc/session-transfer", "POST");
+          // The provider cookie belongs to the API origin. A cross-site fetch
+          // cannot reliably replace it, so let that origin answer once as the
+          // top-level page, consume a one-use ticket, then send us back here.
+          window.location.assign(transfer.location);
+          return;
         } catch {
           // Being signed in here still worked. The person is inside Fidj; what
           // they lose is being recognised by the next app without typing again,
@@ -1146,14 +1140,7 @@ function interactionScreen() {
   <div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>What Fidj is</strong></p><p>Fidj holds your account so each app does not have to. You can see every app you use, what it holds, and take it back — at any time.</p></div></div>
   ${badgeStrip(config.badges)}</section>`;
 
-  element("reveal")?.addEventListener("click", () => {
-    const field = element<HTMLInputElement>("password");
-    const button = element("reveal");
-    if (!field || !button) return;
-    const hidden = field.type === "password";
-    field.type = hidden ? "text" : "password";
-    button.textContent = hidden ? "Hide" : "Show";
-  });
+  if (element("interaction")) bindPasswordReveal(element("interaction")!);
   // Being recognised is the point, and a dead end when the person is not who
   // Fidj thinks — a shared computer, a second account, somebody else's tab. So
   // the screen that recognises them asks again on request. It goes back to the
@@ -1181,6 +1168,7 @@ function renderAccount(route: string) {
   <div class="signin-identity"><h1>Your account.<br>Your control.</h1><p class="signin-description">Secure access to the apps you use, with one Fidj identity.</p></div>
   </div>
   <div class="signin-form"><div>${banner()}${accountForm(route, {linkToken, verificationConfirmed, emailVerified, accountEmail})}</div><footer class="signin-badges"><a href="#/signin">Back to sign in</a></footer></div></section>`;
+  bindPasswordReveal(root);
   wireAccount(route);
 }
 

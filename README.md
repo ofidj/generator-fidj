@@ -64,6 +64,13 @@ generated to reach them. A style change now lands in that package, and this
 template is what remains genuinely the generator's: the shells that hold the
 screens, the content app and the Notes app.
 
+This is an architecture boundary, not only a packaging detail: never copy a
+credential, signup, recovery or agreement component into a generated output.
+The template may compose a shell and call `@ofidj/entry` after dynamic rendering,
+but the markup rules and browser behavior such as password reveal belong in
+`fidj-entry`. A fix there must reach Fidj, mleweb and newly generated apps
+without maintaining parallel component implementations.
+
 The design system is `@ofidj/entry`'s `tokens.css` — every colour, family and
 radius — and its `style.css`, which may not introduce a literal of its own.
 Fonts are self-hosted under `public/fonts` and served from the build manifest,

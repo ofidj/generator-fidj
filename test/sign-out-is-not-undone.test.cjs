@@ -34,6 +34,11 @@ test("does not hand a signed-out person straight back to the session they left",
       /signedOutHere\(\)[\s\S]{0,120}prompt: "login"/,
       "the door must ask again when this browser just signed out",
     );
+    assert.match(
+      content,
+      /if \(oidc\?\.hasSession\(\)\) await oidc\.logout\(\)/,
+      "OIDC sign-out must record that this app just signed out",
+    );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
