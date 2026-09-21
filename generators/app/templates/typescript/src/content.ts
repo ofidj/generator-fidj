@@ -45,7 +45,7 @@ let accountEmail = "";
 // with the agreement unchecked folded the form away and left the complaint
 // floating above a door the person could no longer see.
 let emailEntryOpen = false;
-const accountRoutes = ["forgot", "reset", "verify", "account"];
+const accountRoutes = ["forgot", "reset", "verify", "profile"];
 let linkToken = "";
 let verificationConfirmed = false;
 function currentRoute() {
@@ -88,15 +88,21 @@ function banner() {
 // account, and it lives on that account's screen.
 function appNav(current: "content" | "account") {
   const tab = (id: string, label: string, selected: boolean) =>
-    `<button id="${id}"${selected ? ' class="selected" aria-current="page"' : ""}>${label}</button>`;
+    `<button id="${id}"${selected ? ' class="selected" aria-current="page"' : ""}><span class="tab-label">${label}</span></button>`;
   const account = signedIn
     ? tab(
         "account-tab",
-        accountEmail ? `Account (${escape(accountEmail)})` : "Account",
+        accountEmail ? `Profile (${escape(accountEmail)})` : "Profile",
         current === "account",
       )
     : tab("account-tab", "Sign in", false);
   return tab("content-tab", "Content", current === "content") + account;
+}
+
+function profileSummary() {
+  const publicUrl = `${config.dashboardUrl}/#/pub/${encodeURIComponent(config.appId)}`;
+  const badgeUrl = `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}/badge`;
+  return `<header class="profile-summary"><div class="profile-summary-copy"><span class="eyebrow">Profile</span><strong>${escape(accountEmail)}</strong><span>${escape(config.title)}</span></div><a class="profile-public" href="${escape(publicUrl)}" target="_blank" rel="noopener"><img src="${escape(badgeUrl)}" alt="${escape(config.title)} public badge" width="133" height="20"></a><button id="exit" class="danger">Sign out</button></header>`;
 }
 
 // The bar belongs to the document, not to the screen being drawn: it survives
@@ -112,7 +118,7 @@ function renderNav(current: "content" | "account") {
 function wireNav() {
   element("content-tab")?.addEventListener("click", () => navigate("content"));
   element("account-tab")?.addEventListener("click", () =>
-    navigate(signedIn ? "account" : "signin"),
+    navigate(signedIn ? "profile" : "signin"),
   );
 }
 
@@ -557,15 +563,15 @@ function render() {
     route = "signin";
   else if (!["signin", "content", "privacy", ...accountRoutes].includes(route))
     route = "content";
-  // The privacy screen and the account screen became one. The address that
+  // The privacy screen and the profile screen became one. The address that
   // named the first still means something to anyone who bookmarked it, so it
   // arrives where that screen went rather than nowhere.
-  if (route === "privacy") route = signedIn ? "account" : "signin";
+  if (route === "privacy") route = signedIn ? "profile" : "signin";
   window.history.replaceState(null, "", "#/" + route);
-  // My account is a signed-in screen and keeps the app's chrome. Recovery and
+  // Profile is a signed-in screen and keeps the app's chrome. Recovery and
   // verification are reached without a session, so they stand alone.
   const standaloneAccount =
-    accountRoutes.includes(route) && !(route === "account" && signedIn);
+    accountRoutes.includes(route) && !(route === "profile" && signedIn);
   document.body.classList.toggle(
     "signin-view",
     route === "signin" || standaloneAccount,
@@ -584,11 +590,11 @@ function render() {
     renderAccount(route);
     return;
   }
-  if (route === "account") {
+  if (route === "profile") {
     // The two ways out, last and together: back to the app, or out of this
     // session. Leaving the app itself is a different decision and stays where
     // the things it erases are listed.
-    root.innerHTML = `<section class="card content-account">${banner()}${accountForm("account", {linkToken, verificationConfirmed, emailVerified, accountEmail})}${privacyBlock()}<div class="account-actions"><button id="continue-app" class="primary">Continue to ${escape(config.title)}</button><button id="exit">Sign out</button></div></section>`;
+    root.innerHTML = `<section class="content-account">${profileSummary()}<div class="card profile-body">${banner()}${accountForm("account", {linkToken, verificationConfirmed, emailVerified, accountEmail}, {compact: true})}${privacyBlock()}</div></section>`;
     renderNav("account");
     wireAccount("account");
     wireSignOut();

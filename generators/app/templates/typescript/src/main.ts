@@ -213,7 +213,7 @@ function render() {
   const canWrite = session?.roles.some((role) =>
     ["Owner", "Editor"].includes(role),
   );
-  root.innerHTML = `<header class="topbar"><a class="brand" href="/"><span class="app-symbol">✳</span>${escape(settings.title)}</a><a class="fidj-brand" href="${escape(settings.dashboardUrl)}" target="_blank" rel="noopener"><img src="/fidj-logo.png" alt="Fidj">Privacy with Fidj ↗</a></header>
+  root.innerHTML = `<header class="topbar"><a class="brand" href="/"><span class="app-symbol">✳</span><span class="brand-name">${escape(settings.title)}</span></a><a class="fidj-brand" href="${escape(settings.dashboardUrl)}" target="_blank" rel="noopener"><img src="/fidj-logo.png" alt="Fidj">Privacy with Fidj ↗</a></header>
   <main>${notice ? `<p class="notice" role="status">${escape(notice)}</p>` : ""}${error ? `<p class="error" role="alert">${escape(error)}</p>` : ""}
   ${
     !session
