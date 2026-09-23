@@ -40,7 +40,7 @@ one.
 
 > Maintainers: `bin/create-fidj.cjs` is the same scaffolder without Yeoman, for
 > tooling that runs from a checkout and cannot install `yo` —
-> `scripts/local-stack.py` and `fidj-app`'s `create:local` use it.
+> fidj-brain's `scripts/local-stack.py` and `fidj-app`'s `create:local` use it.
 > `test/parity.test.cjs` fails if either door ever gains an input the other
 > lacks. It is not an entry point to hand to anyone building an app.
 
@@ -87,14 +87,14 @@ build when one is supplied, the template's `@ofidj/node` range otherwise — and
 written to `APP_VERSION` and `app.config.json`. On Fidj's own apps it also shows
 the version `/v3/status` answers with, so the two can be compared without
 translation. Keep that range on the version this generator releases: the
-workspace's `scripts/check-versions.py` and this package's own suite both refuse
+workspace's `scripts/check-versions.py` (in fidj-brain) and this package's own suite both refuse
 the mismatch.
 
 ## Real validation repository
 
 [mleweb](https://github.com/mlefree/mleweb) is the thin command-line validation fixture whose generated website is mlefree.com. Its `package.json` passes the original Mario GIF, welcome text and About/CV/contact links directly into this generator. No custom downstream renderer is required. GitHub CI runs the same generation/build path on Node 22/24 and uploads artifacts. Publishing the site to gh-pages, which is what mlefree.com serves, is a separate deliberate job: it runs on mleweb's `master` or on an explicit workflow dispatch, never from a version branch.
 
-Run `npm test` for scaffolding/CLI safety tests. Generated projects include TypeScript checking and HTTP integration tests for live authorization and privacy isolation. See the [local acceptance walkthrough](../LOCAL-DEVELOPMENT.md). Follow TDD: add/run a failing generator or generated-app test before implementation, make it green, then refactor and rerun regression checks.
+Run `npm test` for scaffolding/CLI safety tests. Generated projects include TypeScript checking and HTTP integration tests for live authorization and privacy isolation. See the [local acceptance walkthrough](../fidj-brain/LOCAL-DEVELOPMENT.md). Follow TDD: add/run a failing generator or generated-app test before implementation, make it green, then refactor and rerun regression checks.
 
 
 ## Releasing to npm
@@ -178,7 +178,7 @@ A compatible issuer, REST API and registered callback without a fragment are pre
 
 ## Required service agreement
 
-[The workspace README](../README.md#entry-one-flow-the-same-everywhere) defines
+[The workspace README](../fidj-brain/README.md#entry-one-flow-the-same-everywhere) defines
 the flow every Fidj sign-in surface follows, and this generator owns the
 implementation the others render. In short: the first screen asks for an email,
 a password, **Sign in** and **Create an account**, and gates neither; creating an
