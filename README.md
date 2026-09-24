@@ -136,6 +136,13 @@ return them to, hands the answer back when they are done, and closes itself. A
 browser that will not open one falls back to the full-page redirect. Fidj's own
 console takes the same door for the same reason — one journey, three apps.
 
+**The passkey (3.15.0).** Fidj's own shell leads with **Continue with a
+passkey**, the email form under it, and shows the EU wallet door instead of the
+"Your account, with Fidj" note. Every other app keeps its form and reaches the
+passkey through the Fidj window: there is one relying party, Fidj's domain, so a
+passkey cannot be asked for on another app's own page. A passkey sign-in owes the
+same answers as a password one; the agreement is accepted with a second touch.
+
 ## Compose an existing app as a module
 
 Build your application for the `/module/` base URL, then pass its public output to the same generator:
