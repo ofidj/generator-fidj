@@ -1,5 +1,5 @@
 import {agreementModel, signInErrorMessage, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
-import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice} from "@ofidj/entry/dom";
+import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice, passkeySupported, passkeyAssertion, walletDoor} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
@@ -10,6 +10,11 @@ const oidc = config.oidcIssuer ? new FidjOidcClient({issuer: config.oidcIssuer, 
 const root = document.querySelector<HTMLDivElement>("#app")!;
 showVersionBadge(config.releaseVersion, config.title === "Fidj" ? config.apiEndpoint : undefined);
 const appPath = `/me/apps/${encodeURIComponent(config.appId)}`;
+// Passkeys (v3 P1-4): one relying party, Fidj's own domain. Only Fidj's own
+// shell runs the ceremony on its page; every other app reaches the passkey
+// through the Fidj window, like the rest of Fidj's sign-in.
+const passkeyHere = config.title === "Fidj" && passkeySupported();
+let signedInWithPasskey = false;
 let signedIn = false;
 let emailVerified = false;
 let anonymous = false;
@@ -620,8 +625,8 @@ function render() {
   root.innerHTML = `<section class="signin-shell"><div class="signin-intro${config.highlights?.length ? "" : " is-plain"}">${masthead(config.logo, config.title)}
   <div class="signin-identity"><h1>${escape(config.welcome)}</h1><p class="signin-description">${escape(config.description)}</p></div>
   ${highlightCells(config.highlights)}</div>
-  <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin">${credentialFields({email: signInEmail, password: signInPassword})}</form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
-  <div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>Your account, with Fidj</strong></p><p>Signing in creates one Fidj account you keep across every app that uses Fidj.</p><p>You choose what this app may store — and can export or erase it at any moment.</p></div></div>
+  <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin">${credentialFields({email: signInEmail, password: signInPassword}, {passkey: passkeyHere})}</form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
+  ${config.title === "Fidj" ? walletDoor() : `<div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>Your account, with Fidj</strong></p><p>Signing in creates one Fidj account you keep across every app that uses Fidj.</p><p>You choose what this app may store — and can export or erase it at any moment.</p></div>`}</div>
   ${badgeStrip(config.badges)}</div></section>`;
   wireNav();
   element("anonymous")?.addEventListener("click", () => {
@@ -642,7 +647,7 @@ function render() {
       config.appId,
       config.signin === "button"
         ? ""
-        : credentialFields({email: signInEmail, password: signInPassword}),
+        : credentialFields({email: signInEmail, password: signInPassword}, {passkey: passkeyHere}),
       isFidjItself,
       config.signin as SigninShape,
     );
@@ -718,10 +723,21 @@ function render() {
       if (!acceptance) return;
       submitter?.setAttribute("data-busy", "true");
       void action(async () => {
-        if (
-          await refusedBeforeSignIn(signInEmail, signInPassword, false, acceptance)
-        )
-          return;
+        // A passkey sign-in has no password to send again: the agreement is
+        // accepted with a second touch of the same passkey.
+        const refused = signedInWithPasskey
+          ? await refusedBeforePasskey(acceptance)
+          : await refusedBeforeSignIn(signInEmail, signInPassword, false, acceptance);
+        if (refused) return;
+        await completeSignIn();
+      });
+      return;
+    }
+    // The first door (v3): the passkey, with nothing typed.
+    if (submitter?.name === "entry" && submitter.value === "passkey") {
+      submitter.setAttribute("data-busy", "true");
+      void action(async () => {
+        if (await refusedBeforePasskey()) return;
         await completeSignIn();
       });
       return;
@@ -764,6 +780,7 @@ async function refusedBeforeSignIn(
   signup: boolean,
   acceptance?: {termsAccepted: boolean; termsVersion: string},
 ): Promise<boolean> {
+  signedInWithPasskey = false;
   try {
     await sdk.login(email, password, {autoSignup: signup, ...acceptance});
     pendingAgreement = null;
@@ -783,6 +800,34 @@ async function refusedBeforeSignIn(
         throw new Error("We cannot reach Fidj right now. Please try again.");
       }
       return true;
+    }
+    throw new Error(signInErrorMessage(error));
+  }
+}
+
+// The same answers as a password sign-in, from a passkey: the browser runs the
+// ceremony against Fidj's challenge, and the SDK trades the answer for tokens.
+async function refusedBeforePasskey(
+  acceptance?: {termsAccepted: boolean; termsVersion: string},
+): Promise<boolean> {
+  signedInWithPasskey = true;
+  try {
+    const {options, ticket} = await sdk.passkeyLoginOptions();
+    const response = await passkeyAssertion(options);
+    await sdk.loginWithPasskey(ticket, response, acceptance);
+    pendingAgreement = null;
+    awaitingVerification = "";
+    return false;
+  } catch (error) {
+    if (agreementRequired(error)) {
+      pendingAgreement = agreementFromRefusal(error) || (await readAgreement());
+      if (!pendingAgreement) {
+        throw new Error("We cannot reach Fidj right now. Please try again.");
+      }
+      return true;
+    }
+    if ((error as any)?.name === "NotAllowedError") {
+      throw new Error("No passkey was used. Try again, or sign in with your email.");
     }
     throw new Error(signInErrorMessage(error));
   }
