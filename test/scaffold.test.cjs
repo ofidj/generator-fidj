@@ -179,6 +179,7 @@ test("assembles an explicit application module and preserves its source", () => 
     // An address inside the shell, not a second document: no "module" in the
     // address bar, and no page reload in the middle of signing in.
     assert.equal(config.moduleEntry, "#/my");
+    assert.equal(config.moduleVersion, "");
     assert.deepEqual(config.moduleMount.styles, ["module/styles.css"]);
     assert.deepEqual(config.moduleMount.scripts, [
       { src: "module/main.js", module: true },
@@ -302,4 +303,36 @@ test("OIDC generation preserves content and rejects an unrelated issuer", () => 
     assert.equal(config.allowAnonymous, false);
     assert.throws(() => scaffold(path.join(root, "bad"), {appId: "fidj-example", apiEndpoint: "https://api.example/v3", oidcIssuer: "https://unrelated.example/oidc", content: ""}));
   } finally {fs.rmSync(root, {recursive: true, force: true});}
+});
+
+// A module with its own patch (Fidj's console) says which one it is, so the
+// badge can name it between the SDK and the API.
+test("carries the mounted module's version and label to the badge", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "fidj-module-version-"));
+  const source = path.join(root, "www");
+  const output = path.join(root, "out");
+  fs.mkdirSync(source);
+  fs.writeFileSync(
+    path.join(source, "index.html"),
+    '<html><head><base href="/"></head><body><app-root></app-root><script src="main.js" type="module"></script></body></html>',
+  );
+  try {
+    scaffold(output, {
+      appId: "fidj-test",
+      module: source,
+      moduleEntry: "index.html#/my",
+      moduleVersion: "3.15.3",
+      moduleLabel: "console",
+    });
+    const config = JSON.parse(fs.readFileSync(path.join(output, "app.config.json")));
+    assert.equal(config.moduleVersion, "3.15.3");
+    assert.equal(config.moduleLabel, "console");
+    const shell = fs.readFileSync(
+      path.join(__dirname, "../generators/app/templates/typescript/src/content.ts"),
+      "utf8",
+    );
+    assert.match(shell, /showVersionBadge\([^)]*config\.moduleVersion/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
 });

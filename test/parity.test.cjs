@@ -69,6 +69,8 @@ test("the Yeoman generator forwards every input to the scaffolder", () => {
     "local",
     "replace",
     "moduleEntry",
+    "moduleVersion",
+    "moduleLabel",
     "sdkPath",
     "entryPath",
     "apiEndpoint",

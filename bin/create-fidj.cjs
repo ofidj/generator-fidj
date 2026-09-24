@@ -24,6 +24,8 @@ try {
       domain: { type: "string" },
       module: { type: "string" },
       "module-entry": { type: "string" },
+      "module-version": { type: "string" },
+      "module-label": { type: "string" },
       local: { type: "boolean" },
       replace: { type: "boolean" },
       help: { type: "boolean" },
@@ -31,7 +33,7 @@ try {
   });
   if (values.help || positionals.length !== 1) {
     console.log(
-      "Usage: create-fidj <directory> --app-id <fidjId> [--api-endpoint <url>] [--title <text> --welcome <text> --description <text> --content <html> --domain <hostname>] [--highlight '<heading>|<body>' ...] [--badge <text> ...] [--logo <image>] [--favicon <image>] [--module <built-directory> --module-entry <index.html#/route>] [--oidc-issuer https://api.example/oidc] [--anonymous true|false] [--signin button|inline|both] [--credentials true|false] [--local] [--replace]",
+      "Usage: create-fidj <directory> --app-id <fidjId> [--api-endpoint <url>] [--title <text> --welcome <text> --description <text> --content <html> --domain <hostname>] [--highlight '<heading>|<body>' ...] [--badge <text> ...] [--logo <image>] [--favicon <image>] [--module <built-directory> --module-entry <index.html#/route> [--module-version <x.y.z> --module-label <name>]] [--oidc-issuer https://api.example/oidc] [--anonymous true|false] [--signin button|inline|both] [--credentials true|false] [--local] [--replace]",
     );
     process.exitCode = values.help ? 0 : 1;
   } else {
@@ -55,6 +57,8 @@ try {
       domain: values.domain,
       module: values.module,
       moduleEntry: values["module-entry"],
+      moduleVersion: values["module-version"],
+      moduleLabel: values["module-label"],
       local: values.local || process.env.FIDJ_LOCAL === "true",
       replace: values.replace,
     });

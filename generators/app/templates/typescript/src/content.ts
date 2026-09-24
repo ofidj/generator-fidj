@@ -8,7 +8,11 @@ import "@ofidj/entry/style.css";
 const sdk = new FidjNodeService();
 const oidc = config.oidcIssuer ? new FidjOidcClient({issuer: config.oidcIssuer, clientId: config.appId, redirectUri: window.location.origin + window.location.pathname, apiEndpoint: config.apiEndpoint, storage: sessionStorage}) : null;
 const root = document.querySelector<HTMLDivElement>("#app")!;
-showVersionBadge(config.releaseVersion, config.title === "Fidj" ? config.apiEndpoint : undefined);
+showVersionBadge(
+  config.releaseVersion,
+  config.title === "Fidj" ? config.apiEndpoint : undefined,
+  config.moduleVersion ? {name: config.moduleLabel || "module", version: config.moduleVersion} : undefined,
+);
 const appPath = `/me/apps/${encodeURIComponent(config.appId)}`;
 // Passkeys (v3 P1-4): one relying party, Fidj's own domain. Only Fidj's own
 // shell runs the ceremony on its page; every other app reaches the passkey

@@ -20,6 +20,8 @@ const TEXT_OPTIONS = [
   "domain",
   "module",
   "module-entry",
+  "module-version",
+  "module-label",
   "logo",
   "favicon",
 ];
@@ -98,6 +100,8 @@ module.exports = class extends Generator {
       favicon: this.options.favicon,
       module: this.options.module,
       moduleEntry: this.options["module-entry"],
+      moduleVersion: this.options["module-version"],
+      moduleLabel: this.options["module-label"],
       domain: this.options.domain,
       sdkPath: this.options["sdk-path"] || process.env.FIDJ_SDK_DIR,
       entryPath: this.options["entry-path"] || process.env.FIDJ_ENTRY_DIR,
