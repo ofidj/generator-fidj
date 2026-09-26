@@ -167,7 +167,10 @@ async function request(path: string, method = "GET", data?: unknown) {
   });
   const result = await response.json();
   if (!response.ok) {
-    if ([401, 403].includes(response.status)) {
+    // Only a 401 means the session is gone; a 403 refuses one action to
+    // somebody still signed in, and signing them out for it ended the console's
+    // session on the first forbidden request.
+    if (response.status === 401) {
       signedIn = false;
       await sdk.logout(true);
     }

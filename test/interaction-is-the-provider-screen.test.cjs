@@ -122,3 +122,14 @@ test("the Fidj window carries the passkey door", () => {
 test("the Fidj window carries whether the agreement is on file", () => {
   assert.match(interactionScreen(), /agreementAccepted: details\.agreementAccepted/);
 });
+
+// Only a 401 means the session is gone. A 403 refuses one action to somebody
+// still signed in; signing them out for it — on Fidj's console, and in the
+// Fidj window that shares its storage — ended the console's session.
+test("the shell signs out on a 401 only, never on a 403", () => {
+  const source = content();
+  const start = source.indexOf("async function request(");
+  const block = source.slice(start, source.indexOf("\n}\n", start));
+  assert.doesNotMatch(block, /\[401, 403\]\.includes/);
+  assert.match(block, /response\.status === 401/);
+});
