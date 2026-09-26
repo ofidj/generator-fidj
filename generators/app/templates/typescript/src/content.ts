@@ -1,5 +1,5 @@
-import {agreementModel, signInErrorMessage, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
-import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, returnNotice, passkeySupported, passkeyAssertion, walletDoor} from "@ofidj/entry/dom";
+import {signInErrorMessage, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
+import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, passkeySupported, passkeyAssertion, walletDoor, oidcInteractionMarkup, oidcInteractionStyles, bindOidcInteraction} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
@@ -1001,9 +1001,9 @@ function privacyBlock() {
           .join("")
       : "<p>No changes yet.</p>"
   }
-  <button id="export">Export my app data</button>
+  <button id="export">Export</button>
   <p>This app stores its session in this browser. The export covers Fidj-held records for this membership. There is no separate app database in this static template.</p>
-  ${roles.includes("Owner") ? "<p>Resolve app ownership before leaving.</p>" : leaving ? '<p>Confirm departure: your membership and its Fidj-held data will be removed. Your other apps remain available.</p><button id="confirm-leave" class="danger">Confirm leaving this app</button><button id="cancel-leave">Keep my membership</button>' : '<button id="leave" class="danger">Leave this app</button>'}
+  ${roles.includes("Owner") ? "<p>Resolve app ownership before leaving.</p>" : leaving ? '<p>Confirm departure: your membership and its Fidj-held data will be removed. Your other apps remain available.</p><button id="confirm-leave" class="danger">Leave &amp; erase</button><button id="cancel-leave">Keep my membership</button>' : '<button id="leave" class="danger">Leave &amp; erase</button>'}
   <p class="leaving"><a href="${escape(config.dashboardUrl)}/#/my" target="_blank" rel="noopener">Open Fidj to manage every app you use ↗</a><br><small>Fidj is the account provider behind ${escape(config.title)}. This opens it in a new tab; you stay signed in here.</small></p>`;
 }
 
@@ -1028,8 +1028,9 @@ type Interaction = {
   scopes: string[];
   termsUri: string;
   privacyUri: string;
-  // The agreement's own text, so it can be read here rather than in another tab.
   agreement?: {version: string; text: string} | null;
+  // Who the consent screen recognises, as the provider names them.
+  recognisedEmail?: string;
   action: string;
 };
 let interactionId = "";
@@ -1123,10 +1124,6 @@ function interactionWaitNotice() {
 
 function interactionScreen() {
   const details = interaction!;
-  const asking = escape(details.app.title);
-  const notice = interactionError
-    ? `<p role="alert" class="error">${escape(refusals[interactionError] || refusals.refused)}</p>`
-    : "";
   const action = new URL(details.action, config.apiEndpoint).href;
   // A refusal comes back as a redirect, so the typed address would be lost —
   // and retyping an address is the part a person gets wrong twice. It is kept
@@ -1135,67 +1132,32 @@ function interactionScreen() {
   try {
     typed = sessionStorage.getItem("fidj.interaction.email") || "";
   } catch {}
-  // Fidj signing into Fidj: saying "the account behind fidj" and "fidj never
-  // sees your password" about itself is nonsense in the same family as offering
-  // to sign in with Fidj on Fidj.
-  const itself = details.app.id === config.appId;
-  // The wait, when this interaction is waiting on an address rather than asking
-  // for anything. It is not a refusal and must not be drawn as one: the account
-  // exists, the link was sent, and what is left is opening it. The address is
-  // read from the interaction's own context rather than from the URL, so
-  // nothing about the person travels in an address bar.
-  const body = details.awaiting
-    ? `<h2>Check your email</h2>
-  <p class="signin-lead">Your account is created. Waiting for you to open the link sent to <strong>${escape(details.awaiting)}</strong>.</p>
-  ${returnNotice(itself ? "Fidj" : asking)}
-  <form method="post" action="${escape(action)}" id="interaction">
-    <input type="hidden" name="csrf" value="${escape(details.csrf)}">
-    <p class="fineprint">The link may take a minute, and it sometimes lands in spam. Open it, then come back here.</p>
-    ${interactionWaitNotice()}
-    <button class="primary" type="submit" name="action" value="continue">Continue</button>
-    <button class="secondary" type="submit" name="action" value="resend">Send the link again</button>
-    <button class="quiet" type="submit" name="action" value="cancel" formnovalidate>Cancel and go back</button>
-  </form>`
-    : details.prompt === "login"
-      ? `<h2>${itself ? "Sign in to Fidj" : "Sign in to continue to " + asking}</h2>
-  <p class="signin-lead">${itself ? "One account across every app that uses Fidj, and a separate set of choices for each one." : `This is Fidj, the account behind ${asking}. One account, and separate choices for every app that uses it — ${asking} never sees your password.`}</p>
-  ${returnNotice(itself ? "Fidj" : asking)}
-  ${notice}
-  <form method="post" action="${escape(action)}" id="interaction">
-    <input type="hidden" name="csrf" value="${escape(details.csrf)}">
-    <label for="email">Email</label><input id="email" name="email" type="email" value="${escape(typed)}" autocomplete="username" required>
-    <div class="field-head"><label for="password">Password</label><a href="${escape(config.dashboardUrl)}/#/forgot">Forgot?</a></div>
-    <div class="password-field"><input id="password" name="password" type="password" autocomplete="current-password" required><button type="button" id="reveal" aria-controls="password">Show</button></div>
-    <button class="primary" type="submit" name="action" value="continue">Sign in</button>
-    <button class="secondary" type="submit" name="action" value="signup">Create a Fidj account</button>
-    <button class="quiet" type="submit" name="action" value="cancel" formnovalidate>Cancel and go back</button>
-  </form>`
-      : `<h2>${itself ? "Continue to Fidj" : "Continue to " + asking}</h2>
-  <p class="signin-lead">${itself ? "Fidj is asking for the information below. Optional privacy choices stay separate for every app, including this one." : `${asking} is asking for the information below. Optional privacy choices stay separate, and you can change them in Fidj at any time.`}</p>
-  ${returnNotice(itself ? "Fidj" : asking)}
-  ${notice}
-  <ul class="scope-list">${details.scopes
-    .filter((scope) => scopeMeaning[scope])
-    .map((scope) => `<li>${escape(scopeMeaning[scope])}</li>`)
-    .join("")}</ul>
-  <form method="post" action="${escape(action)}" id="interaction">
-    <input type="hidden" name="csrf" value="${escape(details.csrf)}">
-    <label class="agreement-choice"><input type="checkbox" name="terms" value="true" required><span>${escape(agreementModel(details.app.title, {}).checkboxLabel)}</span></label>
-    ${details.agreement ? `<details class="agreement"><summary>Read service agreement</summary><p class="fineprint">Version ${escape(details.agreement.version)}</p><p>${escape(details.agreement.text)}</p></details><p class="fineprint">Required to sign in. Optional data choices stay separate.</p>` : ""}
-    ${details.termsUri ? `<p class="fineprint"><a href="${escape(details.termsUri)}" target="_blank" rel="noopener noreferrer">Service agreement</a>${details.privacyUri ? ` · <a href="${escape(details.privacyUri)}" target="_blank" rel="noopener noreferrer">Privacy notice</a>` : ""}</p>` : ""}
-    <button class="primary" type="submit" name="action" value="continue">Allow and continue</button>
-    <button class="quiet" type="submit" id="not-me" name="action" value="switch" formnovalidate>Not you? Sign in with another account</button>
-    <button class="quiet" type="submit" name="action" value="cancel" formnovalidate>Cancel and go back</button>
-  </form>`;
-
-  root.innerHTML = `<section class="signin-shell"><div class="signin-intro is-plain">${masthead(config.logo, config.title)}
-  <div class="signin-identity"><h1>Your identity.<br>Your choices.</h1><p class="signin-description">One account across every app that uses Fidj, and a separate set of choices for each one.</p></div>
-  ${highlightCells(config.highlights)}</div>
-  <div class="signin-form"><div>${body}</div>
-  <div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>What Fidj is</strong></p><p>Fidj holds your account so each app does not have to. You can see every app you use, what it holds, and take it back — at any time.</p></div></div>
-  ${badgeStrip(config.badges)}</section>`;
-
-  if (element("interaction")) bindPasswordReveal(element("interaction")!);
+  // The provider's own screen, drawn here: the same markup and the same scoped
+  // styles as the page it serves itself. This window was opened by an app for
+  // one question, so nothing of this front end's own sign-in page — masthead,
+  // promises, "What Fidj is" — is drawn around it. The wait is not a refusal
+  // and is not drawn as one: its address comes from the interaction's context,
+  // never from the URL.
+  const mode = details.awaiting ? "waiting" : details.prompt === "login" ? "login" : "consent";
+  root.innerHTML = `<style>${oidcInteractionStyles}</style>${oidcInteractionMarkup({
+    mode,
+    appTitle: details.app.title,
+    action,
+    csrf: details.csrf,
+    notice: interactionError ? refusals[interactionError] || refusals.refused : undefined,
+    email: typed,
+    forgotHref: `${config.dashboardUrl}/#/forgot`,
+    waitingEmail: details.awaiting,
+    resent: interactionResent,
+    notYet: interactionNotYet,
+    scopes: details.scopes.filter((scope) => scopeMeaning[scope]).map((scope) => scopeMeaning[scope]),
+    agreement: details.agreement || undefined,
+    // The agreement is a document read in the browser, like the privacy notice.
+    agreementHref: details.termsUri || undefined,
+    recognisedEmail: details.recognisedEmail || undefined,
+    logoSrc: "./fidj-logo.png",
+  })}`;
+  bindOidcInteraction(root);
   // Being recognised is the point, and a dead end when the person is not who
   // Fidj thinks — a shared computer, a second account, somebody else's tab. So
   // the screen that recognises them asks again on request. It goes back to the
@@ -1203,7 +1165,7 @@ function interactionScreen() {
   // session doing the recognising: starting a fresh request with prompt=login
   // from here asked once and left that session standing, so the back button,
   // a reload, or the app's door again met the same face.
-  element("not-me")?.addEventListener("click", () => {
+  root.querySelector('button[value="switch"]')?.addEventListener("click", () => {
     forgetSignIn(config.appId);
     try {
       sessionStorage.removeItem("fidj.interaction.email");
