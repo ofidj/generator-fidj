@@ -49,3 +49,66 @@ test("a copy is an Export and leaving is Leave & erase, everywhere", () => {
     assert.match(source, /class="danger">Leave &amp; erase</, file);
   }
 });
+
+// A generated app writes dates the way Fidj does. It printed consent history
+// as raw ISO strings ("2026-09-24T12:56:46.616Z") and notes in the browser's
+// locale.
+test("dates are written by the entry's formatDate", () => {
+  for (const file of ["content.ts", "main.ts"]) {
+    const source = fs.readFileSync(
+      path.join(__dirname, "..", "generators/app/templates/typescript/src", file),
+      "utf8",
+    );
+    assert.doesNotMatch(source, /toLocale(Date|Time)?String\(/, file);
+    assert.doesNotMatch(source, /escape\(entry\.changedAt\)/, file);
+    assert.match(source, /formatDate\(/, file);
+  }
+});
+
+// A generated app's own privacy screen reads like Fidj's GDPR card: the
+// agreement with its ground, each choice as a switch that says On or Off, then
+// History, Export and Leave & erase. The developer's view is gone: "Refresh
+// access", "Roles: …", the static-template fineprint, a hard-coded agreement
+// version.
+test("the app's privacy screen is the GDPR card, not a developer page", () => {
+  const source = content();
+  const start = source.indexOf("function privacyBlock()");
+  const block = source.slice(start, source.indexOf("\n}\n", start));
+  assert.match(block, /optionalPurposes/);
+  assert.match(block, /role="switch"/);
+  assert.match(block, /class="basis consent"/);
+  assert.match(block, /<details class="member-history">/);
+  assert.doesNotMatch(block, /Refresh access|Roles:|static template|These choices apply only/);
+  assert.doesNotMatch(source, /cguVersion: "starter-demo-1"/);
+});
+
+// A verified address is one line on the account screen; the verification
+// controls ("Refresh verification status") only appear while there is still
+// something to verify.
+test("a verified account shows one Email line, not verification controls", () => {
+  const source = content();
+  assert.match(source, /emailVerified\s*\?\s*accountRows\(\)\s*:\s*accountForm\("account"/);
+  const start = source.indexOf("function accountRows()");
+  const block = source.slice(start, source.indexOf("\n}\n", start));
+  assert.match(block, /· verified/);
+  assert.match(block, /#\/my\/profile/);
+});
+
+// A new tab on an app this browser signed in to (and did not sign out of)
+// asks Fidj silently instead of drawing "Continue as …": the app's session is
+// per tab, and the one-click screen read as being signed out.
+test("an app this browser signed in to re-enters silently in a new tab", () => {
+  const source = content();
+  for (const name of ["function mightBeRecognised()", "async function askWhetherFidjKnowsThisBrowser()"]) {
+    const start = source.indexOf(name);
+    const block = source.slice(start, source.indexOf("\n}\n", start));
+    assert.match(block, /isFidjItself \|\| signInHint\(config\.appId\)/, name);
+  }
+});
+
+// The passkey door on the Fidj window: the challenge from the interaction's
+// context reaches the shared screen, as it reaches the provider's own page.
+test("the Fidj window carries the passkey door", () => {
+  const block = interactionScreen();
+  assert.match(block, /passkey: details\.passkey/);
+});

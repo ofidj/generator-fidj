@@ -1,4 +1,4 @@
-import {signInErrorMessage, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
+import {signInErrorMessage, formatDate, optionalPurposes, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
 import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, passkeySupported, passkeyAssertion, walletDoor, oidcInteractionMarkup, oidcInteractionStyles, bindOidcInteraction} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
@@ -330,7 +330,10 @@ const PUBLIC_ROUTE = "pub";
 // spinner's worth of ceremony, and it says what it is doing.
 let recognising = false;
 function mightBeRecognised() {
-  if (!oidc || !isFidjItself) return false;
+  // Fidj itself, or an app this browser signed in to before: its session lives
+  // in the tab, so a new tab would otherwise draw "Continue as …" for somebody
+  // Fidj still recognises.
+  if (!oidc || !(isFidjItself || signInHint(config.appId))) return false;
   if ((moduleRoute() || "").split("/")[0] === PUBLIC_ROUTE) return false;
   // Not on a screen somebody was sent to by a link.
   //
@@ -354,7 +357,12 @@ function mightBeRecognised() {
 }
 
 async function askWhetherFidjKnowsThisBrowser() {
-  if (!oidc || !isFidjItself || sdk.isLoggedIn() || oidc.signedOutHere())
+  if (
+    !oidc ||
+    !(isFidjItself || signInHint(config.appId)) ||
+    sdk.isLoggedIn() ||
+    oidc.signedOutHere()
+  )
     return false;
   if ((moduleRoute() || "").split("/")[0] === PUBLIC_ROUTE) return false;
   // Not on a screen somebody was sent to by a link.
@@ -603,7 +611,7 @@ function render() {
     // The two ways out, last and together: back to the app, or out of this
     // session. Leaving the app itself is a different decision and stays where
     // the things it erases are listed.
-    root.innerHTML = `<section class="content-account">${profileSummary()}<div class="card profile-body">${banner()}${accountForm("account", {linkToken, verificationConfirmed, emailVerified, accountEmail}, {compact: true})}${privacyBlock()}</div></section>`;
+    root.innerHTML = `<section class="content-account">${profileSummary()}<div class="card profile-body">${banner()}${emailVerified ? accountRows() : accountForm("account", {linkToken, verificationConfirmed, emailVerified, accountEmail}, {compact: true})}${privacyBlock()}</div></section>`;
     renderNav("account");
     wireAccount("account");
     wireSignOut();
@@ -913,9 +921,11 @@ function wirePrivacy() {
     "click",
     () =>
       void action(async () => {
+        // The version published now is the version recorded.
+        const agreement = await readAgreement();
         await request(appPath + "/consents", "PUT", {
           terms: true,
-          cguVersion: "starter-demo-1",
+          ...(agreement ? {cguVersion: agreement.version} : {}),
           source: "profile",
         });
         await refresh();
@@ -984,27 +994,43 @@ function wirePrivacy() {
 // about it. It used to be a screen of its own called My privacy, one tab
 // away from the account it was about — so a person looking for their own
 // data had two places to try and no way to tell which.
+// The account, once there is nothing left to verify: one line, and the way to
+// change it, which is on Fidj — the account is Fidj's, not this app's.
+function accountRows() {
+  return `<div class="member-rows"><div class="member-row"><div><strong>Email</strong><small>${escape(accountEmail)} · verified</small></div><a href="${escape(config.dashboardUrl)}/#/my/profile" target="_blank" rel="noopener noreferrer">Manage on Fidj ↗</a></div></div>`;
+}
+
 function privacyBlock() {
-  return `<h2>What ${escape(config.title)} holds</h2><p>Roles: ${roles.map(escape).join(" · ") || "No assigned roles"}</p><button id="refresh">Refresh access</button>
-  <p>These choices apply only to this app.${config.allowAnonymous ? " You can also view the public content by entering anonymously." : ""}</p>
-  <p>Service agreement: ${consent.terms ? "Accepted" : "Not recorded"}. ${consent.terms ? "Leaving withdraws this agreement." : 'This generated example uses a demo agreement. <button id="terms">Accept demo agreement</button>'}</p>
-  ${["analytics", "communications", "optionalData"].map((key, i) => `<label class="toggle"><span>${["Analytics", "Communications", "Optional data"][i]}</span><input type="checkbox" data-purpose="${key}" ${consent[key] ? "checked" : ""}></label>`).join("")}
-  <h3>Consent history</h3>${
-    history.length
-      ? history
-          .slice()
-          .reverse()
-          .map(
-            (entry) =>
-              `<p>${escape(entry.type)} · ${entry.granted ? "Accepted" : "Withdrawn"} · ${escape(entry.changedAt)}</p>`,
-          )
-          .join("")
-      : "<p>No changes yet.</p>"
-  }
-  <button id="export">Export</button>
-  <p>This app stores its session in this browser. The export covers Fidj-held records for this membership. There is no separate app database in this static template.</p>
-  ${roles.includes("Owner") ? "<p>Resolve app ownership before leaving.</p>" : leaving ? '<p>Confirm departure: your membership and its Fidj-held data will be removed. Your other apps remain available.</p><button id="confirm-leave" class="danger">Leave &amp; erase</button><button id="cancel-leave">Keep my membership</button>' : '<button id="leave" class="danger">Leave &amp; erase</button>'}
-  <p class="leaving"><a href="${escape(config.dashboardUrl)}/#/my" target="_blank" rel="noopener">Open Fidj to manage every app you use ↗</a><br><small>Fidj is the account provider behind ${escape(config.title)}. This opens it in a new tab; you stay signed in here.</small></p>`;
+  const acceptedVersion = String((consent as Record<string, unknown>).termsVersion || "");
+  const agreementHref = `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}/agreements/${encodeURIComponent(acceptedVersion)}`;
+  const agreementRow = consent.terms
+    ? `<div class="member-row"><div><strong>Service agreement</strong>${acceptedVersion ? `<a class="basis" href="${escape(agreementHref)}" target="_blank" rel="noopener noreferrer">Contract · agreement ${escape(acceptedVersion)} ↗</a>` : '<span class="basis">Contract</span>'}</div><small class="nosw">Part of the service. To stop it, leave the app.</small></div>`
+    : '<div class="member-row"><div><strong>Service agreement</strong><small>Not accepted yet — accept it or leave the app.</small></div><button id="terms" class="primary">Accept</button></div>';
+  const choices = optionalPurposes
+    .map(
+      (purpose) =>
+        `<label class="member-row" for="purpose-${purpose.key}"><div><strong>${escape(purpose.title)}</strong><small>${escape(purpose.description)}</small><span class="basis consent">Consent</span></div><span class="switch"><input type="checkbox" role="switch" id="purpose-${purpose.key}" data-purpose="${purpose.key}" ${consent[purpose.key] ? "checked" : ""}><span class="switch-state" aria-hidden="true">${consent[purpose.key] ? "On" : "Off"}</span></span></label>`,
+    )
+    .join("");
+  const entries = history.length
+    ? history
+        .slice()
+        .reverse()
+        .map(
+          (entry) =>
+            `<p>${escape(formatDate(entry.changedAt, "datetime"))} · ${escape(entry.type)} ${entry.granted ? "given" : "withdrawn"}</p>`,
+        )
+        .join("")
+    : "<p>No changes yet.</p>";
+  const leave = roles.includes("Owner")
+    ? "<small>You own this app: hand it over or delete it on Fidj before leaving.</small>"
+    : leaving
+      ? '<p>Your membership and what this app holds for you will be erased. Your other apps remain available.</p><button id="confirm-leave" class="danger">Leave &amp; erase</button><button id="cancel-leave">Keep my membership</button>'
+      : '<button id="leave" class="danger">Leave &amp; erase</button>';
+  return `<h2>Your membership</h2><div class="member-rows">${agreementRow}${choices}</div>
+  <details class="member-history"><summary>History</summary>${entries}</details>
+  <div class="member-actions"><button id="export">Export</button>${leave}</div>
+  <p class="leaving"><a href="${escape(config.dashboardUrl)}/#/my/gdpr" target="_blank" rel="noopener noreferrer">Open Fidj to manage every app you use ↗</a></p>`;
 }
 
 // ------------------------------------------------ signing in, for the provider
@@ -1031,6 +1057,8 @@ type Interaction = {
   agreement?: {version: string; text: string} | null;
   // Who the consent screen recognises, as the provider names them.
   recognisedEmail?: string;
+  // The passkey door's challenge, on the login step.
+  passkey?: {ticket: string; options: unknown};
   action: string;
 };
 let interactionId = "";
@@ -1155,6 +1183,7 @@ function interactionScreen() {
     // The agreement is a document read in the browser, like the privacy notice.
     agreementHref: details.termsUri || undefined,
     recognisedEmail: details.recognisedEmail || undefined,
+    passkey: details.passkey,
     logoSrc: "./fidj-logo.png",
   })}`;
   bindOidcInteraction(root);
