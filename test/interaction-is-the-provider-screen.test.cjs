@@ -38,6 +38,8 @@ test("the agreement is a link to the browser, never nested", () => {
 // Fidj's GDPR page, the generated apps and their starter server say the same
 // word for the same action: "Export" for a copy, "Leave & erase" for leaving.
 test("a copy is an Export and leaving is Leave & erase, everywhere", () => {
+  // Both screens draw the entry's member card, which says Export and
+  // Leave & erase; neither keeps a wording of its own.
   for (const file of ["content.ts", "main.ts"]) {
     const source = fs.readFileSync(
       path.join(__dirname, "..", "generators/app/templates/typescript/src", file),
@@ -45,8 +47,7 @@ test("a copy is an Export and leaving is Leave & erase, everywhere", () => {
     );
     assert.doesNotMatch(source, /Export my (app )?data/, file);
     assert.doesNotMatch(source, /Leave and erase my app data|Confirm leaving/, file);
-    assert.match(source, /id="export">Export</, file);
-    assert.match(source, /class="danger">Leave &amp; erase</, file);
+    assert.match(source, /memberCard\(/, file);
   }
 });
 
@@ -61,7 +62,7 @@ test("dates are written by the entry's formatDate", () => {
     );
     assert.doesNotMatch(source, /toLocale(Date|Time)?String\(/, file);
     assert.doesNotMatch(source, /escape\(entry\.changedAt\)/, file);
-    assert.match(source, /formatDate\(/, file);
+    assert.match(source, /formatDate\(|memberCard\(/, file);
   }
 });
 
@@ -74,12 +75,15 @@ test("the app's privacy screen is the GDPR card, not a developer page", () => {
   const source = content();
   const start = source.indexOf("function privacyBlock()");
   const block = source.slice(start, source.indexOf("\n}\n", start));
-  assert.match(block, /optionalPurposes/);
-  assert.match(block, /role="switch"/);
-  assert.match(block, /class="basis consent"/);
-  assert.match(block, /<details class="member-history">/);
+  assert.match(block, /memberCard\(/);
   assert.doesNotMatch(block, /Refresh access|Roles:|static template|These choices apply only/);
   assert.doesNotMatch(source, /cguVersion: "starter-demo-1"/);
+  // The starter draws the same card, not its own "Your choices in this app".
+  const main = fs.readFileSync(
+    path.join(__dirname, "..", "generators/app/templates/typescript/src/main.ts"),
+    "utf8",
+  );
+  assert.doesNotMatch(main, /Your choices in this app|Accept demo agreement|Consent history/);
 });
 
 // A verified address is one line on the account screen; the verification
@@ -111,4 +115,10 @@ test("an app this browser signed in to re-enters silently in a new tab", () => {
 test("the Fidj window carries the passkey door", () => {
   const block = interactionScreen();
   assert.match(block, /passkey: details\.passkey/);
+});
+
+// The Fidj window knows when the agreement is already on file, so the consent
+// screen it draws asks only which account.
+test("the Fidj window carries whether the agreement is on file", () => {
+  assert.match(interactionScreen(), /agreementAccepted: details\.agreementAccepted/);
 });

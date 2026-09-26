@@ -19,8 +19,9 @@ test("generates a standalone typed client and server without private keys", () =
     assert.ok(fs.existsSync(path.join(output, "src/main.ts")));
     const main = fs.readFileSync(path.join(output, "src/main.ts"), "utf8");
     assert.doesNotMatch(main, /\bconfirm\s*\(/);
-    assert.match(main, /role="alertdialog"/);
-    assert.match(main, /Keep my membership/);
+    // The departure confirmation (role="alertdialog") is the entry's member
+    // card, drawn with the starter's own wording of what leaving erases.
+    assert.match(main, /memberCard\(\{[\s\S]*leaving,[\s\S]*leaveScope:/);
     const config = JSON.parse(
       fs.readFileSync(path.join(output, "app.config.json"), "utf8"),
     );

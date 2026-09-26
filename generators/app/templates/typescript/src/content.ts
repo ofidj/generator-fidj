@@ -1,5 +1,5 @@
-import {signInErrorMessage, formatDate, optionalPurposes, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
-import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, passkeySupported, passkeyAssertion, walletDoor, oidcInteractionMarkup, oidcInteractionStyles, bindOidcInteraction} from "@ofidj/entry/dom";
+import {signInErrorMessage, formatDate, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
+import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, passkeySupported, passkeyAssertion, walletDoor, memberCard, oidcInteractionMarkup, oidcInteractionStyles, bindOidcInteraction} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
@@ -412,16 +412,16 @@ function signInThroughProvider(
   void action(async () => {
     let url: string;
     try {
-      // Being recognised again is the one thing somebody who has just signed
-      // out did not ask for, and skipping this is what let a sign-out be undone
-      // by pressing the door again: the provider still knew the browser and
-      // answered with a code, no screen at all. Ending the provider session is
-      // what should make that impossible, and that call can be refused — so the
-      // door asks rather than assumes, until somebody signs in again.
+      // Somebody who has just signed out of this app did not ask to be walked
+      // straight back in: the provider still knows the browser and would answer
+      // with a code and no screen. So the door asks which account — the consent
+      // screen names the one Fidj recognises and offers another. It does not ask
+      // for a password: prompt=login told Fidj "this is not me" and ended the
+      // Fidj session along with the app's.
       url = await oidc.beginLogin(
         options.prompt || options.silent || !oidc.signedOutHere()
           ? options
-          : {...options, prompt: "login"},
+          : {...options, prompt: "consent"},
       );
     } catch (error) {
       providerWindow?.giveUp();
@@ -917,7 +917,7 @@ function wirePrivacy() {
         navigate("signin");
       }),
   );
-  element("terms")?.addEventListener(
+  element("accept-terms")?.addEventListener(
     "click",
     () =>
       void action(async () => {
@@ -1001,36 +1001,15 @@ function accountRows() {
 }
 
 function privacyBlock() {
-  const acceptedVersion = String((consent as Record<string, unknown>).termsVersion || "");
-  const agreementHref = `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}/agreements/${encodeURIComponent(acceptedVersion)}`;
-  const agreementRow = consent.terms
-    ? `<div class="member-row"><div><strong>Service agreement</strong>${acceptedVersion ? `<a class="basis" href="${escape(agreementHref)}" target="_blank" rel="noopener noreferrer">Contract · agreement ${escape(acceptedVersion)} ↗</a>` : '<span class="basis">Contract</span>'}</div><small class="nosw">Part of the service. To stop it, leave the app.</small></div>`
-    : '<div class="member-row"><div><strong>Service agreement</strong><small>Not accepted yet — accept it or leave the app.</small></div><button id="terms" class="primary">Accept</button></div>';
-  const choices = optionalPurposes
-    .map(
-      (purpose) =>
-        `<label class="member-row" for="purpose-${purpose.key}"><div><strong>${escape(purpose.title)}</strong><small>${escape(purpose.description)}</small><span class="basis consent">Consent</span></div><span class="switch"><input type="checkbox" role="switch" id="purpose-${purpose.key}" data-purpose="${purpose.key}" ${consent[purpose.key] ? "checked" : ""}><span class="switch-state" aria-hidden="true">${consent[purpose.key] ? "On" : "Off"}</span></span></label>`,
-    )
-    .join("");
-  const entries = history.length
-    ? history
-        .slice()
-        .reverse()
-        .map(
-          (entry) =>
-            `<p>${escape(formatDate(entry.changedAt, "datetime"))} · ${escape(entry.type)} ${entry.granted ? "given" : "withdrawn"}</p>`,
-        )
-        .join("")
-    : "<p>No changes yet.</p>";
-  const leave = roles.includes("Owner")
-    ? "<small>You own this app: hand it over or delete it on Fidj before leaving.</small>"
-    : leaving
-      ? '<p>Your membership and what this app holds for you will be erased. Your other apps remain available.</p><button id="confirm-leave" class="danger">Leave &amp; erase</button><button id="cancel-leave">Keep my membership</button>'
-      : '<button id="leave" class="danger">Leave &amp; erase</button>';
-  return `<h2>Your membership</h2><div class="member-rows">${agreementRow}${choices}</div>
-  <details class="member-history"><summary>History</summary>${entries}</details>
-  <div class="member-actions"><button id="export">Export</button>${leave}</div>
-  <p class="leaving"><a href="${escape(config.dashboardUrl)}/#/my/gdpr" target="_blank" rel="noopener noreferrer">Open Fidj to manage every app you use ↗</a></p>`;
+  const version = String((consent as Record<string, unknown>).termsVersion || "");
+  return memberCard({
+    consent,
+    history,
+    agreementHref: `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}/agreements/${encodeURIComponent(version)}`,
+    owner: roles.includes("Owner"),
+    leaving,
+    manageHref: `${config.dashboardUrl}/#/my/gdpr`,
+  });
 }
 
 // ------------------------------------------------ signing in, for the provider
@@ -1059,6 +1038,8 @@ type Interaction = {
   recognisedEmail?: string;
   // The passkey door's challenge, on the login step.
   passkey?: {ticket: string; options: unknown};
+  // The recognised person's agreement is on file at the version in force.
+  agreementAccepted?: boolean;
   action: string;
 };
 let interactionId = "";
@@ -1184,6 +1165,7 @@ function interactionScreen() {
     agreementHref: details.termsUri || undefined,
     recognisedEmail: details.recognisedEmail || undefined,
     passkey: details.passkey,
+    agreementAccepted: details.agreementAccepted,
     logoSrc: "./fidj-logo.png",
   })}`;
   bindOidcInteraction(root);

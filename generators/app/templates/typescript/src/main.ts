@@ -1,5 +1,5 @@
 import {agreementRequired, agreementFromRefusal, signInErrorMessage, rememberSignIn, forgetSignIn, formatDate, type SigninShape} from "@ofidj/entry";
-import {acceptedAgreement, agreementScreen, bindAgreementScreen, bindPasswordReveal, providerEntry, showEmailEntry, showVersionBadge} from "@ofidj/entry/dom";
+import {acceptedAgreement, agreementScreen, memberCard, bindAgreementScreen, bindPasswordReveal, providerEntry, showEmailEntry, showVersionBadge} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import "@ofidj/entry/style.css";
@@ -224,18 +224,18 @@ function render() {
   ${
     view === "workspace"
       ? `<section class="workspace"><div><div class="section-heading"><h2>Your notes</h2><span>${notes.length} saved</span></div>${notes.length ? notes.map((note) => `<article class="card note"><small>${escape(formatDate(note.createdAt, "datetime"))}</small><h3>${escape(note.title)}</h3><p>${escape(note.body)}</p></article>`).join("") : `<article class="card empty"><span>✳</span><h3>Room for your next idea.</h3><p>Your saved notes will appear here. Only you can read your notes.</p></article>`}</div><form id="note" class="card"><p class="eyebrow">CAPTURE SOMETHING</p><h2>A fresh note</h2><p>${canWrite ? "You have permission to save notes." : "Ask your app owner for Editor access to save notes."}</p><label for="note-title">Title</label><input id="note-title" maxlength="120" required ${!canWrite ? "disabled" : ""}><label for="note-body">Your note</label><textarea id="note-body" rows="6" maxlength="5000" ${!canWrite ? "disabled" : ""}></textarea><button class="primary" type="submit" ${!canWrite ? "disabled" : ""}>Save note</button><small>Your notes are saved by this app and survive a server restart.</small></form></section>`
-      : `<section class="privacy-grid"><article class="card"><p class="eyebrow">ONLY ${escape(settings.title).toUpperCase()}</p><h2>Your choices in this app</h2><p>These preferences are independent of Fidj and your other apps.</p><div class="agreement"><strong>Service agreement</strong><span>${privacy?.consent.terms ? "Accepted" : "Not recorded"}</span>${!privacy?.consent.terms ? '<p>This starter uses a demo agreement. Accept it to record your choice.</p><button id="accept-terms">Accept demo agreement</button>' : "<p>Leaving this app withdraws its required agreement.</p>"}</div>${["analytics", "communications", "optionalData"].map((key, index) => `<label class="toggle"><span><strong>${["Analytics", "Communications", "Optional data"][index]}</strong><small>${["Help improve this app.", "Receive optional news and updates.", "Allow data beyond the essential service."][index]}</small></span><input type="checkbox" data-purpose="${key}" ${privacy?.consent[key] ? "checked" : ""}></label>`).join("")}<button id="export">Export</button></article><article class="card"><h2>Consent history</h2>${
-          privacy?.history.length
-            ? privacy.history
-                .slice()
-                .reverse()
-                .map(
-                  (entry) =>
-                    `<p><strong>${escape(entry.type)}</strong> · ${entry.granted ? "Accepted" : "Withdrawn"}<br><small>${escape(formatDate(entry.changedAt, "datetime"))}</small></p>`,
-                )
-                .join("")
-            : "<p>No changes yet.</p>"
-        }<hr><h2>Leave this app</h2><p>This removes your app membership and this starter’s notes. Your Fidj account and other memberships remain.</p>${session.roles.includes("Owner") ? "<p>As the app owner, resolve ownership before leaving.</p>" : leaving ? '<div role="alertdialog" aria-labelledby="leave-title"><h3 id="leave-title">Confirm departure</h3><p>Your membership, consent and notes in this app will be removed. Your Fidj account and other apps remain available.</p><button id="confirm-leave" class="danger">Leave &amp; erase</button><button id="cancel-leave">Keep my membership</button></div>' : '<button id="leave" class="danger">Leave &amp; erase</button>'}<p class="fineprint">Exports here include your Fidj membership and this starter’s notes. The registered app-data handler lets Fidj export and erase these notes too. If cleanup is pending, retry from My privacy on Fidj. Minimal completion receipts are retained; backups and unregistered systems are outside this operation.</p></article></section>`
+      : `<section class="card privacy-card">${memberCard({
+          consent: privacy?.consent || {},
+          history: privacy?.history || [],
+          agreementHref: privacy?.consent.termsVersion
+            ? `${settings.apiEndpoint}/apps/${encodeURIComponent(settings.appId)}/agreements/${encodeURIComponent(String(privacy.consent.termsVersion))}`
+            : undefined,
+          owner: session.roles.includes("Owner"),
+          leaving,
+          leaveScope:
+            "Your membership, your choices and your notes in this app will be erased. Your Fidj account and other apps remain available.",
+          manageHref: `${settings.dashboardUrl}/#/my/gdpr`,
+        })}</section>`
   }`
   }
   <footer>Built with Fidj · One identity. Separate choices for every app.</footer></main>`;
@@ -348,7 +348,7 @@ function render() {
       void action(async () => {
         await api("privacy", "PUT", { terms: true });
         await load();
-        notice = "Demo agreement accepted.";
+        notice = "Service agreement accepted.";
       }),
   );
   el("export")?.addEventListener(

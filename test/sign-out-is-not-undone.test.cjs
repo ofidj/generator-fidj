@@ -29,10 +29,17 @@ test("does not hand a signed-out person straight back to the session they left",
       content.indexOf("function navigate"),
     );
     assert.ok(door.includes("beginLogin("), "failed to find the Fidj door");
+    // It asks which account — the consent screen that names the one Fidj
+    // recognises, with "Use another account" — not for a password: prompt=login
+    // told Fidj "this is not me" and ended the Fidj session with the app's.
     assert.match(
       door,
+      /signedOutHere\(\)[\s\S]{0,120}prompt: "consent"/,
+      "the door must ask which account when this browser just signed out",
+    );
+    assert.doesNotMatch(
+      door.slice(door.indexOf("beginLogin(")),
       /signedOutHere\(\)[\s\S]{0,120}prompt: "login"/,
-      "the door must ask again when this browser just signed out",
     );
     assert.match(
       content,
