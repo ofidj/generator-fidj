@@ -1,5 +1,29 @@
 # Changelog
 
+## [3.18.2] - 2026-09-26
+
+- Keep the session when the ID token has expired. The shell sent the stored ID
+  token as it stood — it lives half an hour, while `isLoggedIn()` reads only the
+  refresh token — and took the API's 401 as the end of the session:
+  `logout(true)` deleted the refresh token on the server and in the browser. So
+  every tab opened more than thirty minutes after signing in, on fidj.ovh itself
+  as in every app, landed on the sign-in. Requests now go through
+  `src/api-request.ts`, which refreshes the SDK's token before sending it and
+  retries a 401 once on a forced refresh before ending anything. Studio Notes
+  and the content shell share it.
+- Keep the address somebody asked for. A new tab on `#/profile` landed on
+  `#/content`: the silent question to Fidj came back to the redirect URI and was
+  sent home, and a sign-in by hand did the same. The route now survives the
+  silent re-entry, the session restore and the Fidj door.
+- Profile: the member card is no longer framed inside a second card, and the
+  profile takes the content's width. History is a button beside Export
+  (`bindMemberHistory` from `@ofidj/entry/dom` 3.18.1) and reads with the
+  purpose titles.
+- Sign-in: the "Your account, with Fidj" block under the form is gone — it
+  restated the lead.
+- Needs `@ofidj/entry` 3.18.1: the template range (`^3.18.0`) resolves to it once
+  it is published; tighten it to `^3.18.1` then.
+
 ## [3.7.5] - 2026-09-14
 
 - Stop offering by name somebody who signed out. The entry remembers the last

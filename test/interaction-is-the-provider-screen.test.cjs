@@ -127,9 +127,11 @@ test("the Fidj window carries whether the agreement is on file", () => {
 // still signed in; signing them out for it — on Fidj's console, and in the
 // Fidj window that shares its storage — ended the console's session.
 test("the shell signs out on a 401 only, never on a 403", () => {
-  const source = content();
-  const start = source.indexOf("async function request(");
-  const block = source.slice(start, source.indexOf("\n}\n", start));
+  // The shell's requests go through api-request.ts, which owns what a 401 costs.
+  const block = fs.readFileSync(
+    path.join(__dirname, "../generators/app/templates/typescript/src/api-request.ts"),
+    "utf8",
+  );
   assert.doesNotMatch(block, /\[401, 403\]\.includes/);
   assert.match(block, /response\.status === 401/);
 });

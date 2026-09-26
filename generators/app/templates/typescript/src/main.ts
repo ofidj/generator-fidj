@@ -1,8 +1,9 @@
 import {agreementRequired, agreementFromRefusal, signInErrorMessage, rememberSignIn, forgetSignIn, formatDate, type SigninShape} from "@ofidj/entry";
-import {acceptedAgreement, agreementScreen, memberCard, bindAgreementScreen, bindPasswordReveal, providerEntry, showEmailEntry, showVersionBadge} from "@ofidj/entry/dom";
+import {acceptedAgreement, agreementScreen, memberCard, bindMemberHistory, bindAgreementScreen, bindPasswordReveal, providerEntry, showEmailEntry, showVersionBadge} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import "@ofidj/entry/style.css";
+import {authorizedRequest} from "./api-request";
 
 type Session = { username: string; roles: string[] };
 type Note = { id: string; title: string; body: string; createdAt: string };
@@ -56,26 +57,16 @@ const escape = (value: unknown) =>
   );
 const el = <T extends HTMLElement>(id: string) =>
   document.getElementById(id) as T;
-async function api(path: string, method = "GET", data?: unknown) {
-  const token = await sdk.fidjGetIdToken();
-  const response = await fetch("/api/" + path, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: data === undefined ? undefined : JSON.stringify(data),
-  });
-  const result = await response.json();
-  if (!response.ok) {
-    if (response.status === 401) {
-      session = null;
-      await sdk.logout(true);
-    }
-    throw new Error(result.message || "Please retry.");
-  }
-  return result;
-}
+// Refreshes the SDK's token before sending it, and retries a 401 once before
+// ending the session: see api-request.ts.
+const api = authorizedRequest({
+  sdk,
+  providerSession: () => !!oidc?.hasSession(),
+  baseUrl: "/api/",
+  onSignedOut: () => {
+    session = null;
+  },
+});
 // The credential fields, in one place because the entry shows them beside the
 // Fidj door rather than instead of it.
 function credentialFields() {
@@ -247,6 +238,7 @@ function render() {
   // The app's own form, folded away under the Fidj door rather than beside it.
   if (!pendingAgreement && emailEntryOpen) showEmailEntry(true);
   if (!pendingAgreement && el("signin")) bindPasswordReveal(el("signin")!);
+  bindMemberHistory(root);
   el("use-email")?.addEventListener("click", () => {
     emailEntryOpen = !emailEntryOpen;
     showEmailEntry(emailEntryOpen, true);

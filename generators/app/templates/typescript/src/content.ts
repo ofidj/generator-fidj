@@ -1,8 +1,9 @@
 import {signInErrorMessage, formatDate, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
-import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, passkeySupported, passkeyAssertion, walletDoor, memberCard, oidcInteractionMarkup, oidcInteractionStyles, bindOidcInteraction} from "@ofidj/entry/dom";
+import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, passkeySupported, passkeyAssertion, walletDoor, memberCard, bindMemberHistory, oidcInteractionMarkup, oidcInteractionStyles, bindOidcInteraction} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
 import config from "../app.config.json";
+import {authorizedRequest} from "./api-request";
 import "@ofidj/entry/style.css";
 
 const sdk = new FidjNodeService();
@@ -154,30 +155,16 @@ function wireSignOut() {
   );
 }
 
-async function request(path: string, method = "GET", data?: unknown) {
-  const token = await sdk.fidjGetIdToken();
-  const response = await fetch(config.apiEndpoint + path, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: data === undefined ? undefined : JSON.stringify(data),
-    signal: AbortSignal.timeout(10000),
-  });
-  const result = await response.json();
-  if (!response.ok) {
-    // Only a 401 means the session is gone; a 403 refuses one action to
-    // somebody still signed in, and signing them out for it ended the console's
-    // session on the first forbidden request.
-    if (response.status === 401) {
-      signedIn = false;
-      await sdk.logout(true);
-    }
-    throw new Error(result.message || result.status || "Please retry.");
-  }
-  return result;
-}
+// Refreshes the SDK's token before sending it, and retries a 401 once before
+// ending the session: see api-request.ts.
+const request = authorizedRequest({
+  sdk,
+  providerSession: () => !!oidc?.hasSession(),
+  baseUrl: config.apiEndpoint,
+  onSignedOut: () => {
+    signedIn = false;
+  },
+});
 async function refresh() {
   const membership = await request(
     `/apps/${encodeURIComponent(config.appId)}/me`,
@@ -390,6 +377,7 @@ async function askWhetherFidjKnowsThisBrowser() {
     return false;
   }
   try {
+    rememberRoute();
     window.location.assign(await oidc.beginLogin({ silent: true }));
     return true;
   } catch {
@@ -451,7 +439,7 @@ function signInThroughProvider(
     } catch {}
     await refresh();
     anonymous = false;
-    navigate("content");
+    navigate(takeReturnRoute());
   });
 }
 // A person moving between screens is making history, so push an entry: Back has
@@ -462,6 +450,50 @@ function signInThroughProvider(
 function navigate(route: string) {
   if (route !== currentRoute()) window.history.pushState(null, "", "#/" + route);
   if (!busy) render();
+}
+
+// The screen somebody asked for when signing in got in the way.
+//
+// An address names a screen, and signing in is a detour on the way to it. A
+// new tab opened on #/profile used to land on #/content: the tab asked Fidj
+// silently, and the answer came back to the redirect URI — which carries no
+// hash — and was sent to the app's home. Signing in by hand lost it the same
+// way: the entry took the address over, and the door led home afterwards.
+//
+// The silent question leaves the document, so what it must bring back crosses
+// in sessionStorage; a sign-in on this page only needs to remember it.
+const RETURN_ROUTE = "fidj.return-route";
+let returnRoute = "";
+function worthReturningTo(route: string) {
+  const name = route.split("?")[0];
+  // The home is where a sign-in lands anyway; the entry and the mailed links
+  // are not destinations.
+  return (
+    Boolean(name) &&
+    !["content", "signin", "forgot", "reset", "verify"].includes(name)
+  );
+}
+function rememberRoute(route = window.location.hash.slice(2)) {
+  if (!worthReturningTo(route)) return;
+  returnRoute = route;
+  try {
+    sessionStorage.setItem(RETURN_ROUTE, route);
+  } catch {
+    // Storage refused: the app's home is still somewhere to land.
+  }
+}
+// Read once: a route is returned to by the sign-in that detoured from it, not
+// by every sign-in after.
+function takeReturnRoute() {
+  let route = returnRoute;
+  returnRoute = "";
+  try {
+    route = sessionStorage.getItem(RETURN_ROUTE) || route;
+    sessionStorage.removeItem(RETURN_ROUTE);
+  } catch {
+    // Storage refused: what this page remembered is all there is.
+  }
+  return worthReturningTo(route) ? route : "content";
 }
 
 function moduleRoute() {
@@ -579,8 +611,10 @@ function render() {
     !signedIn &&
     !(config.allowAnonymous && anonymous) &&
     !["forgot", "reset", "verify"].includes(route)
-  )
+  ) {
+    if (route !== "signin") rememberRoute();
     route = "signin";
+  }
   else if (!["signin", "content", "privacy", ...accountRoutes].includes(route))
     route = "content";
   // The privacy screen and the profile screen became one. The address that
@@ -614,7 +648,7 @@ function render() {
     // The two ways out, last and together: back to the app, or out of this
     // session. Leaving the app itself is a different decision and stays where
     // the things it erases are listed.
-    root.innerHTML = `<section class="content-account">${profileSummary()}<div class="card profile-body">${banner()}${emailVerified ? accountRows() : accountForm("account", {linkToken, verificationConfirmed, emailVerified, accountEmail}, {compact: true})}${privacyBlock()}</div></section>`;
+    root.innerHTML = `<section class="content-account">${profileSummary()}<div class="profile-body">${banner()}${emailVerified ? accountRows() : accountForm("account", {linkToken, verificationConfirmed, emailVerified, accountEmail}, {compact: true})}${privacyBlock()}</div></section>`;
     renderNav("account");
     wireAccount("account");
     wireSignOut();
@@ -641,7 +675,7 @@ function render() {
   <div class="signin-identity"><h1>${escape(config.welcome)}</h1><p class="signin-description">${escape(config.description)}</p></div>
   ${highlightCells(config.highlights)}</div>
   <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin">${credentialFields({email: signInEmail, password: signInPassword}, {passkey: passkeyHere})}</form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
-  ${config.title === "Fidj" ? walletDoor() : `<div class="signin-trust"><p class="signin-trust-head"><img class="signin-logo" src="./fidj-logo.png" alt="Fidj"><strong>Your account, with Fidj</strong></p><p>Signing in creates one Fidj account you keep across every app that uses Fidj.</p><p>You choose what this app may store — and can export or erase it at any moment.</p></div>`}</div>
+  ${config.title === "Fidj" ? walletDoor() : ""}</div>
   ${badgeStrip(config.badges)}</div></section>`;
   wireNav();
   element("anonymous")?.addEventListener("click", () => {
@@ -895,10 +929,11 @@ function completeSignIn() {
       }
       await refresh();
       anonymous = false;
-    // A new account belongs where a returning one lands: inside the app.
-    // Sending it to the account card instead dropped people who had just
-    // signed up on the shell, one click short of the app they came for.
-    navigate("content");
+    // A new account belongs where a returning one lands: inside the app, on the
+    // screen it asked for. Sending it to the account card instead dropped
+    // people who had just signed up on the shell, one click short of the app
+    // they came for.
+    navigate(takeReturnRoute());
   })();
 }
 
@@ -906,6 +941,7 @@ function completeSignIn() {
 // the roles it reads, the agreement, the optional choices, the export and
 // the way out of the app itself.
 function wirePrivacy() {
+  bindMemberHistory(root);
   element("refresh")?.addEventListener("click", () => void action(refresh));
   element("signout")?.addEventListener(
     "click",
@@ -1297,7 +1333,7 @@ function boot() {
     if (interactionId) return;
     if (oidc && new URL(window.location.href).searchParams.has("state")) {
       const callback = new URL(window.location.href);
-      window.history.replaceState(null, "", window.location.pathname + "#/content");
+      window.history.replaceState(null, "", window.location.pathname + "#/" + takeReturnRoute());
       try {
         await oidc.completeLogin(callback);
       } catch (refusal) {
