@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.19.0] - 2026-09-27
+
+- Generated apps take `@ofidj/entry` 3.19.0 and `@ofidj/node` 3.19.0: the top
+  bar stays on screen and the tabs pin under it, Sign out is the same red,
+  compact button as on Fidj's profile, the inline sign-in form has no
+  preamble, and the member card links the contract as "Contract · read it".
+
 ## [3.18.2] - 2026-09-26
 
 - Keep the session when the ID token has expired. The shell sent the stored ID
