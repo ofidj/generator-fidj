@@ -56,3 +56,14 @@ test("refuses an entry that starts nothing", () => {
     /empty body/,
   );
 });
+
+// Angular's production build defers its stylesheet and repeats it inside
+// <noscript>. Both links were read, so fidj.ovh loaded and applied the console's
+// stylesheet twice (UI review, 3 Oct).
+test("takes a stylesheet once when the build repeats it for <noscript>", () => {
+  const mount = describeMount(
+    `<head><link rel="stylesheet" href="styles.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="styles.css"></noscript></head><body><app-root></app-root><script src="main.js" type="module"></script></body>`,
+    "index.html",
+  );
+  assert.deepEqual(mount.styles, ["module/styles.css"]);
+});

@@ -112,7 +112,7 @@ function appNav(current: "content" | "account") {
 function profileSummary() {
   const publicUrl = `${config.dashboardUrl}/#/pub/${encodeURIComponent(config.appId)}`;
   const badgeUrl = `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}/badge`;
-  return `<header class="profile-summary"><div class="profile-summary-copy"><span class="eyebrow">Profile</span><strong>${escape(accountEmail)}</strong><span>${escape(config.title)}</span></div><a class="profile-public" href="${escape(publicUrl)}" target="_blank" rel="noopener"><img src="${escape(badgeUrl)}" alt="${escape(config.title)} public badge" width="133" height="20"></a><button id="exit" class="danger">Sign out</button></header>`;
+  return `<header class="profile-summary"><div class="profile-summary-copy"><span class="eyebrow">Profile</span><strong>${escape(accountEmail)}</strong><span>${escape(config.title)}</span></div><a class="profile-public" href="${escape(publicUrl)}" target="_blank" rel="noopener"><img src="${escape(badgeUrl)}" alt="${escape(config.title)} public badge" width="133" height="20"></a><button id="exit" class="sign-out">Sign out</button></header>`;
 }
 
 // The bar belongs to the document, not to the screen being drawn: it survives
@@ -521,6 +521,9 @@ function startModule() {
   } | null;
   if (!mount) return;
   moduleStarted = true;
+  // The entry may have been on screen a moment ago (a refused request, a
+  // redirect); its class drops the page margins the app relies on.
+  document.body.classList.remove("signin-view");
   document.body.classList.add("has-module");
   // The app takes the whole document, not a corner of the shell's. A built
   // single-page app positions itself against the body — Ionic, for one, fixes
