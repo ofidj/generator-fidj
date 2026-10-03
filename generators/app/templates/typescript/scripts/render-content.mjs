@@ -31,7 +31,7 @@ function mountedHead(config) {
 }
 export function renderContent(config) {
   // HTML is supplied by the developer at generation time, never by an app visitor.
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>${escape(config.title)}</title><link rel="icon" href="${escape(config.favicon)}"><link rel="stylesheet" href="./main.css">${mountedHead(config)}</head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><meta name="description" content="${escape(config.description)}"><title>${escape(config.title)}</title><link rel="icon" href="${escape(config.favicon)}"><link rel="preload" href="./fonts/InstrumentSerif-400-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="./main.css">${mountedHead(config)}</head><body>
   <header class="topbar"><a class="brand" href="#/content"><img src="${escape(config.logo)}" alt=""><span class="brand-name">${escape(config.title)}</span></a><nav class="content-nav" id="app-nav" aria-label="App navigation" hidden></nav></header>
   <main><template id="public-content"><section class="card public-content"><h1>${escape(config.welcome)}</h1><div>${config.content}</div></section></template><div id="app" aria-live="polite"></div><footer>Built with Fidj · Your choices belong to this app.</footer></main><script type="module" src="./main.js"></script></body></html>`;
 }

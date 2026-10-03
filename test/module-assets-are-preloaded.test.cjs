@@ -84,6 +84,6 @@ test("an app with no module names nothing extra", async () => {
     moduleMount: null,
   });
   assert.doesNotMatch(html, /modulepreload/);
-  assert.doesNotMatch(html, /rel="preload"/);
+  assert.doesNotMatch(html, /rel="preload"[^>]+href="\/module/);
   assert.doesNotMatch(html, /fidj-shell/);
 });

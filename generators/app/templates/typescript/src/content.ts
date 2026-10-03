@@ -100,11 +100,7 @@ function appNav(current: "content" | "account") {
   const tab = (id: string, label: string, selected: boolean) =>
     `<button id="${id}"${selected ? ' class="selected" aria-current="page"' : ""}><span class="tab-label">${label}</span></button>`;
   const account = signedIn
-    ? tab(
-        "account-tab",
-        accountEmail ? `Profile (${escape(accountEmail)})` : "Profile",
-        current === "account",
-      )
+    ? tab("account-tab", "Profile", current === "account")
     : tab("account-tab", "Sign in", false);
   return tab("content-tab", "Content", current === "content") + account;
 }
@@ -112,7 +108,7 @@ function appNav(current: "content" | "account") {
 function profileSummary() {
   const publicUrl = `${config.dashboardUrl}/#/pub/${encodeURIComponent(config.appId)}`;
   const badgeUrl = `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}/badge`;
-  return `<header class="profile-summary"><div class="profile-summary-copy"><span class="eyebrow">Profile</span><strong>${escape(accountEmail)}</strong><span>${escape(config.title)}</span></div><a class="profile-public" href="${escape(publicUrl)}" target="_blank" rel="noopener"><img src="${escape(badgeUrl)}" alt="${escape(config.title)} public badge" width="133" height="20"></a><button id="exit" class="sign-out">Sign out</button></header>`;
+  return `<header class="profile-summary"><div class="profile-summary-copy"><h1 class="eyebrow">Profile</h1><strong>${escape(accountEmail)}</strong><span>${escape(config.title)}</span></div><a class="profile-public" href="${escape(publicUrl)}" target="_blank" rel="noopener"><img src="${escape(badgeUrl)}" alt="${escape(config.title)} public badge" width="133" height="20"></a><button id="exit" class="sign-out">Sign out</button></header>`;
 }
 
 // The bar belongs to the document, not to the screen being drawn: it survives
