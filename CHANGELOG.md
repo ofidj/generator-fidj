@@ -6,6 +6,10 @@
   console reached after the entry no longer loses its page margins.
 - A module stylesheet repeated inside `<noscript>` is loaded once.
 - The profile's Sign out is a plain button (`.sign-out`), not `.danger`.
+- An Enter sign-in shows "Please wait…" on the visible Continue.
+- The generated page carries a meta description and preloads its serif; the
+  Profile tab no longer carries the address; the profile has a heading.
+- Generated apps install @ofidj/entry 3.21.1.
 
 ## [3.21.1] - 2026-10-03
 
