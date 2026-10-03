@@ -812,7 +812,12 @@ function render() {
       signInThroughProvider(submitter);
       return;
     }
-    submitter?.setAttribute("data-busy", "true");
+    // Enter arrives through the unseen twin of Continue; the wait is shown on
+    // the Continue a person can see.
+    const shown = submitter?.classList.contains("implicit-submit")
+      ? root.querySelector<HTMLButtonElement>('button.primary[value="credentials"]')
+      : submitter;
+    shown?.setAttribute("data-busy", "true");
     void action(async () => {
       if (oidc && (!email || !password)) {
         throw new Error("Enter your email and password, or sign in with Fidj.");
