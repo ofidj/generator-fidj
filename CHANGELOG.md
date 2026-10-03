@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.21.2] - 2026-10-03
+
+- Starting the mounted app removes the sign-in screen's `signin-view` class: a
+  console reached after the entry no longer loses its page margins.
+- A module stylesheet repeated inside `<noscript>` is loaded once.
+- The profile's Sign out is a plain button (`.sign-out`), not `.danger`.
+
 ## [3.21.1] - 2026-10-03
 
 - Generated apps install @ofidj/node 3.21.1.
