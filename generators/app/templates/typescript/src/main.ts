@@ -1,4 +1,4 @@
-import {agreementRequired, agreementFromRefusal, signInErrorMessage, rememberSignIn, forgetSignIn, formatDate, type SigninShape} from "@ofidj/entry";
+import {agreementRequired, agreementFromRefusal, agreementAddress, type ServiceAgreement, signInErrorMessage, rememberSignIn, forgetSignIn, formatDate, type SigninShape} from "@ofidj/entry";
 import {acceptedAgreement, agreementScreen, memberCard, bindMemberHistory, bindAgreementScreen, bindPasswordReveal, providerEntry, showEmailEntry, showVersionBadge} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
@@ -30,7 +30,7 @@ let settings: Settings;
 let session: Session | null = null;
 let notes: Note[] = [];
 let privacy: {
-  consent: Record<string, boolean>;
+  consent: Record<string, boolean> & {termsVersion?: string; termsHref?: string};
   history: Array<{ type: string; granted: boolean; changedAt: string }>;
 } | null = null;
 let view = "workspace";
@@ -42,7 +42,7 @@ let signInEmail = "";
 let signInPassword = "";
 // The agreement this app is owed, once the API has said so. There is no
 // account creation here, so there is no verification wait to hold either.
-let pendingAgreement: {version: string; text: string} | null = null;
+let pendingAgreement: ServiceAgreement | null = null;
 // Whether the person asked for the app's own form: the entry is rebuilt on every
 // render, and a refused sign-in is a render, so it has to be remembered or the
 // form folds away under the complaint about it.
@@ -219,7 +219,10 @@ function render() {
           consent: privacy?.consent || {},
           history: privacy?.history || [],
           agreementHref: privacy?.consent.termsVersion
-            ? `${settings.apiEndpoint}/apps/${encodeURIComponent(settings.appId)}/agreements/${encodeURIComponent(String(privacy.consent.termsVersion))}`
+            ? agreementAddress(settings.apiEndpoint, settings.appId, {
+                version: String(privacy.consent.termsVersion),
+                href: privacy.consent.termsHref,
+              })
             : undefined,
           owner: session.roles.includes("Owner"),
           leaving,
@@ -232,7 +235,7 @@ function render() {
   <footer>Built with Fidj · One identity. Separate choices for every app.</footer></main>`;
   // The agreement takes the form's place once the API says this app is owed one.
   if (pendingAgreement && el("signin")) {
-    el("signin")!.innerHTML = agreementScreen(settings.title, pendingAgreement, `${settings.apiEndpoint}/apps/${encodeURIComponent(settings.appId)}/agreements/${encodeURIComponent(pendingAgreement.version || "")}`);
+    el("signin")!.innerHTML = agreementScreen(settings.title, pendingAgreement, agreementAddress(settings.apiEndpoint, settings.appId, pendingAgreement));
     bindAgreementScreen(el<HTMLFormElement>("signin"));
   }
   // The app's own form, folded away under the Fidj door rather than beside it.

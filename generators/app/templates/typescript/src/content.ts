@@ -1,4 +1,4 @@
-import {signInErrorMessage, formatDate, agreementRequired, agreementFromRefusal, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
+import {signInErrorMessage, formatDate, agreementRequired, agreementFromRefusal, agreementAddress, type ServiceAgreement, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
 import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, passkeySupported, passkeyAssertion, walletDoor, memberCard, bindMemberHistory, oidcInteractionMarkup, oidcInteractionStyles, bindOidcInteraction} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
@@ -41,7 +41,7 @@ let signInEmail = "";
 let signInPassword = "";
 // The agreement this app is owed, once the API has said so, and the address a
 // just-created account is waiting on. Only one of them is ever set.
-let pendingAgreement: {version: string; text: string} | null = null;
+let pendingAgreement: ServiceAgreement | null = null;
 let awaitingVerification = "";
 let verificationResent = false;
 let verificationNotice = "";
@@ -704,7 +704,7 @@ function render() {
   // form's place rather than sitting under it: the credentials were accepted,
   // and what is left is a decision about this app.
   if (pendingAgreement && element("signin")) {
-    element("signin")!.innerHTML = agreementScreen(config.title, pendingAgreement, `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}/agreements/${encodeURIComponent(pendingAgreement.version || "")}`);
+    element("signin")!.innerHTML = agreementScreen(config.title, pendingAgreement, agreementAddress(config.apiEndpoint, config.appId, pendingAgreement));
     bindAgreementScreen(element<HTMLFormElement>("signin"));
   }
   // The app's own form, for whoever came to type a password. Folded away rather
@@ -897,7 +897,12 @@ async function readAgreement() {
       agreement.version &&
       typeof agreement?.text === "string" &&
       agreement.text
-      ? {version: agreement.version, text: agreement.text}
+      ? {
+          version: agreement.version,
+          text: agreement.text,
+          ...(typeof agreement.language === "string" ? {language: agreement.language} : {}),
+          ...(typeof agreement.href === "string" ? {href: agreement.href} : {}),
+        }
       : null;
   } catch {
     return null;
@@ -1041,10 +1046,11 @@ function accountRows() {
 
 function privacyBlock() {
   const version = String((consent as Record<string, unknown>).termsVersion || "");
+  const href = (consent as Record<string, unknown>).termsHref;
   return memberCard({
     consent,
     history,
-    agreementHref: `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}/agreements/${encodeURIComponent(version)}`,
+    agreementHref: agreementAddress(config.apiEndpoint, config.appId, {version, href: typeof href === "string" ? href : undefined}),
     owner: roles.includes("Owner"),
     leaving,
     manageHref: `${config.dashboardUrl}/#/my/gdpr`,

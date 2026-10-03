@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.20.0] - 2026-10-03
+
+- Generated apps link the service agreement through `agreementAddress` from
+  `@ofidj/entry`, with the address the API hands: the agreement screen and the
+  membership history open the text in the language the person read, instead of
+  an address each template rebuilt without it. A test keeps the templates from
+  rebuilding it again.
+
 ## [3.19.0] - 2026-09-27
 
 - Generated apps take `@ofidj/entry` 3.19.0 and `@ofidj/node` 3.19.0: the top
