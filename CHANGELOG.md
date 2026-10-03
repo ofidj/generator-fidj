@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.21.1] - 2026-10-03
+
+- Generated apps install @ofidj/node 3.21.1.
+
 ## [3.21.0] - 2026-10-03
 
 - No change of its own: moves to the 3.21 series. Generated apps install

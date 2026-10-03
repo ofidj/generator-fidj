@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@ofidj/entry": "^3.21.0",
-    "@ofidj/node": "^3.21.0"
+    "@ofidj/node": "^3.21.1"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
