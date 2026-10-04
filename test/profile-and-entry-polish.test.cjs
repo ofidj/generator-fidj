@@ -17,6 +17,10 @@ test("the sign-in does not restate the lead under the form", () => {
   assert.doesNotMatch(content, /class="signin-trust"/);
 });
 
+test("the phone form carries the app mark before asking for a password", () => {
+  assert.match(content, /signin-mobile-masthead/);
+});
+
 // The member card is framed by its own rows; a second card around it drew a
 // border inside a border.
 test("the profile body is not a second card", () => {

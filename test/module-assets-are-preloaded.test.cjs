@@ -76,6 +76,12 @@ test("the head tells a mounted app that a shell is hosting it", async () => {
   assert.match(head, /<meta name="fidj-shell" content="\.\/">/);
 });
 
+test("a mounted app never flashes the generated-app footer", async () => {
+  const html = (await renderContent())(mounted);
+
+  assert.doesNotMatch(html, /Your choices belong to this app/);
+});
+
 test("an app with no module names nothing extra", async () => {
   const html = (await renderContent())({
     ...base,

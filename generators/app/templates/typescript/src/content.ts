@@ -97,10 +97,10 @@ function banner() {
 // Signing out is not a place, so it is not a tab: it is a thing you do to an
 // account, and it lives on that account's screen.
 function appNav(current: "content" | "account") {
-  const tab = (id: string, label: string, selected: boolean) =>
-    `<button id="${id}"${selected ? ' class="selected" aria-current="page"' : ""}><span class="tab-label">${label}</span></button>`;
+  const tab = (id: string, label: string, selected: boolean, profile = false) =>
+    `<button id="${id}"${selected ? ' class="selected" aria-current="page"' : ""}>${profile ? '<span class="profile-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><circle cx="10" cy="7" r="3"/><path d="M4.5 16c.7-3 2.5-4.5 5.5-4.5s4.8 1.5 5.5 4.5"/></svg></span>' : ""}<span class="tab-label">${label}</span></button>`;
   const account = signedIn
-    ? tab("account-tab", "Profile", current === "account")
+    ? tab("account-tab", "Profile", current === "account", true)
     : tab("account-tab", "Sign in", false);
   return tab("content-tab", "Content", current === "content") + account;
 }
@@ -673,7 +673,7 @@ function render() {
   root.innerHTML = `<section class="signin-shell"><div class="signin-intro${config.highlights?.length ? "" : " is-plain"}">${masthead(config.logo, config.title)}
   <div class="signin-identity"><h1>${escape(config.welcome)}</h1><p class="signin-description">${escape(config.description)}</p></div>
   ${highlightCells(config.highlights)}</div>
-  <div class="signin-form"><div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin">${credentialFields({email: signInEmail, password: signInPassword}, {passkey: passkeyHere})}</form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
+  <div class="signin-form"><div><div class="signin-mobile-masthead">${masthead(config.logo, config.title)}</div>${banner()}<h2>Sign in to ${escape(config.title)}</h2><form id="signin">${credentialFields({email: signInEmail, password: signInPassword}, {passkey: passkeyHere})}</form>${config.allowAnonymous ? `<div class="signin-divider"><span>or explore first</span></div><button class="anonymous-entry" id="anonymous">Enter anonymously <span aria-hidden="true">→</span></button><p class="signin-footnote">No account needed to view the content.</p>` : ""}
   ${config.title === "Fidj" ? walletDoor() : ""}</div>
   ${badgeStrip(config.badges)}</div></section>`;
   wireNav();
