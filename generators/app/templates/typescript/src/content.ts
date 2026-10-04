@@ -589,15 +589,16 @@ function render() {
     interactionScreen();
     return;
   }
-  // Which of its routes need a session is the mounted app's business, not the
-  // shell's: Fidj's own console serves /pub to anyone, and every app that needs
-  // one revalidates it for itself. So any address the shell does not own is
-  // handed over as it stands — before the shell asks the API who this is, not
-  // after. Waiting cost several seconds of "Loading your session…" on an address
-  // the shell was never going to draw: a token refresh and three round trips ran
-  // to completion before a quarter of a megabyte of application even began
-  // downloading. Nothing in that answer decides anything here.
+  // Public app routes can mount immediately. Private routes wait only while
+  // the shell checks whether Fidj already recognises this browser; after that
+  // the mounted app revalidates its own session and owns its routing.
   if (moduleRoute()) {
+    // A private app must wait while Fidj recognises an existing browser session.
+    // Otherwise its router can redirect to sign-in and abort the OAuth navigation.
+    if (recognising) {
+      root.innerHTML = '<p role="status">Loading your session…</p>';
+      return;
+    }
     startModule();
     return;
   }
@@ -1325,7 +1326,11 @@ if (relayProviderAnswer()) {
 function boot() {
   window.addEventListener("hashchange", render);
   recognising = mightBeRecognised();
-  render();
+  // OAuth redirects inherit the old fragment when the provider omits one.
+  // Settle the callback before mounting the app that owns that fragment.
+  if (oidc && new URL(window.location.href).searchParams.has("state"))
+    root.innerHTML = '<p role="status">Completing your sign-in…</p>';
+  else render();
   if (readInteraction()) {
     render();
     void loadInteraction()
@@ -1340,49 +1345,59 @@ function boot() {
       .finally(render);
   }
   void action(async () => {
-    if (interactionId) return;
-    if (oidc && new URL(window.location.href).searchParams.has("state")) {
-      const callback = new URL(window.location.href);
-      window.history.replaceState(null, "", window.location.pathname + "#/" + takeReturnRoute());
-      try {
-        await oidc.completeLogin(callback);
-      } catch (refusal) {
-        const why = (refusal as {code?: string; silentRefusal?: boolean}) || {};
-        // A silent question answered "no" is an answer, not a failure. But the
-        // two ways of saying no mean opposite things here.
-        //
-        // `login_required` — the provider does not know this browser, and the
-        // entry is the right next screen.
-        //
-        // `consent_required` — it knows exactly who this is; what it has not got
-        // is this client's permission, because the account was made through
-        // another app and Fidj's console is a client of its own. Asking again
-        // without `prompt=none` gets the screen that collects it, and no
-        // password: the person already typed theirs once.
-        if (why.code === "consent_required") {
-          window.location.assign(await oidc.beginLogin());
-          return;
+    try {
+      if (interactionId) return;
+      if (oidc && new URL(window.location.href).searchParams.has("state")) {
+        const callback = new URL(window.location.href);
+        window.history.replaceState(null, "", window.location.pathname);
+        try {
+          await oidc.completeLogin(callback);
+        } catch (refusal) {
+          const why = (refusal as {code?: string; silentRefusal?: boolean}) || {};
+          // A silent question answered "no" is an answer, not a failure. But the
+          // two ways of saying no mean opposite things here.
+          //
+          // `login_required` — the provider does not know this browser, and the
+          // entry is the right next screen.
+          //
+          // `consent_required` — it knows exactly who this is; what it has not got
+          // is this client's permission, because the account was made through
+          // another app and Fidj's console is a client of its own. Asking again
+          // without `prompt=none` gets the screen that collects it, and no
+          // password: the person already typed theirs once.
+          if (why.code === "consent_required") {
+            window.location.assign(await oidc.beginLogin());
+            return;
+          }
+          if (!why.silentRefusal) throw refusal;
         }
-        if (!why.silentRefusal) throw refusal;
+        // Restore the app route only after the callback settles. Restoring it
+        // before a consent redirect lets the app mount and replace that redirect
+        // with its own entry while the provider navigation is still pending.
+        window.history.replaceState(null, "", window.location.pathname + "#/" + takeReturnRoute());
+        try {
+          sessionStorage.removeItem("fidj.interaction.email");
+        } catch {}
       }
-      try {
-        sessionStorage.removeItem("fidj.interaction.email");
-      } catch {}
+      await sdk.init(config.appId, {
+        apiEndpoint: config.apiEndpoint,
+        prod: !config.localDemo,
+      });
+      recognising = recognising && !sdk.isLoggedIn();
+      if (!recognising && moduleRoute()) render();
+      if (sdk.isLoggedIn()) {
+        await refresh();
+        if (!moduleRoute() && !accountRoutes.includes(currentRoute()))
+          navigate("content");
+        return;
+      }
+      // Nothing held here. Fidj may still know this browser from an app.
+      if (await askWhetherFidjKnowsThisBrowser()) return;
+      recognising = false;
+      render();
+    } catch (error) {
+      recognising = false;
+      throw error;
     }
-    await sdk.init(config.appId, {
-      apiEndpoint: config.apiEndpoint,
-      prod: !config.localDemo,
-    });
-    recognising = recognising && !sdk.isLoggedIn();
-    if (sdk.isLoggedIn()) {
-      await refresh();
-      if (!moduleRoute() && !accountRoutes.includes(currentRoute()))
-        navigate("content");
-      return;
-    }
-    // Nothing held here. Fidj may still know this browser from an app.
-    if (await askWhetherFidjKnowsThisBrowser()) return;
-    recognising = false;
-    render();
   });
 }

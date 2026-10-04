@@ -1,5 +1,11 @@
 # Changelog
 
+## [3.24.0] - 2026-10-04
+
+- The 3.24 series; generated apps install @ofidj/entry 3.24.0 and @ofidj/node 3.24.0.
+- Wait for browser-session recognition and settle OIDC callbacks before mounting private app routes, so the app router cannot abort sign-in or consent navigation. The wait ends when recognition fails, and the app mounts as soon as it ends.
+
+
 ## [3.23.0] - 2026-10-04
 
 - No change of its own: the 3.23 series; generated apps install @ofidj/entry
