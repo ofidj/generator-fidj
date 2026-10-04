@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.23.0] - 2026-10-04
+
+- No change of its own: the 3.23 series; generated apps install @ofidj/entry
+  3.23.0 and @ofidj/node 3.23.0.
+
 ## [3.22.0] - 2026-10-04
 
 - The 3.22 series: generated apps install @ofidj/entry 3.22.0 and
