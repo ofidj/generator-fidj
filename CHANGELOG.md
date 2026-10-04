@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.22.0] - 2026-10-04
+
+- The 3.22 series: generated apps install @ofidj/entry 3.22.0 and
+  @ofidj/node 3.22.0.
+- The Profile tab carries a profile mark; on a phone the sign-in form shows the
+  app's masthead; a mounted app has no "Built with Fidj" footer of its own; the
+  local demo calls its members members, not "Free".
+
 ## [3.21.2] - 2026-10-03
 
 - Starting the mounted app removes the sign-in screen's `signin-view` class: a
