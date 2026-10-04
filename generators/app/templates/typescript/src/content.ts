@@ -1,4 +1,4 @@
-import {signInErrorMessage, formatDate, agreementRequired, agreementFromRefusal, agreementAddress, type ServiceAgreement, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
+import {permissionLines, signInErrorMessage, formatDate, agreementRequired, agreementFromRefusal, agreementAddress, type ServiceAgreement, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
 import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, passkeySupported, passkeyAssertion, walletDoor, memberCard, bindMemberHistory, oidcInteractionMarkup, oidcInteractionStyles, bindOidcInteraction} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
@@ -1102,14 +1102,6 @@ let interactionNotYet = false;
 let interaction: Interaction | null = null;
 let interactionFailed = false;
 
-const scopeMeaning: Record<string, string> = {
-  openid: "An identity specific to this app",
-  profile: "Your display name",
-  email: "Your email and verification status",
-  offline_access: "Stay signed in",
-  "fidj:api": "Use Fidj account and privacy services for this app",
-};
-
 const refusals: Record<string, string> = {
   credentials: "We could not sign you in. Check your email and password.",
   signup:
@@ -1209,7 +1201,7 @@ function interactionScreen() {
     waitingEmail: details.awaiting,
     resent: interactionResent,
     notYet: interactionNotYet,
-    scopes: details.scopes.filter((scope) => scopeMeaning[scope]).map((scope) => scopeMeaning[scope]),
+    scopes: permissionLines(details.scopes),
     agreement: details.agreement || undefined,
     // The agreement is a document read in the browser, like the privacy notice.
     agreementHref: details.termsUri || undefined,

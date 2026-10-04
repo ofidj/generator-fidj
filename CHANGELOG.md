@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.25.0] - 2026-10-04
+
+- The 3.25 series; generated apps install @ofidj/entry 3.25.0 and @ofidj/node 3.25.0.
+- The consent screen reads permission meanings from @ofidj/entry, so the account-deletion permission is named there as on the API's page.
+
 ## [3.24.0] - 2026-10-04
 
 - The 3.24 series; generated apps install @ofidj/entry 3.24.0 and @ofidj/node 3.24.0.
