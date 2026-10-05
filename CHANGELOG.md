@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.26.0] - 2026-10-05
+
+- The 3.26 series; generated apps install @ofidj/entry 3.26.0 and @ofidj/node 3.26.0.
+
 ## [3.25.0] - 2026-10-04
 
 - The 3.25 series; generated apps install @ofidj/entry 3.25.0 and @ofidj/node 3.25.0.
