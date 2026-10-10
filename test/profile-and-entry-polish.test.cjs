@@ -60,3 +60,27 @@ test("the route asked for survives signing in", () => {
   assert.match(door, /navigate\(takeReturnRoute\(\)\)/);
   assert.doesNotMatch(door, /navigate\("content"\)/);
 });
+
+// One compact head on Fidj and in every generated app: Profile, then the
+// address beside the app's own badge, and Sign out in red at the card's top
+// right — no line repeating the app's name.
+test('the profile opens on a compact card that holds Sign out', () => {
+  const summary = content.slice(content.indexOf('function profileSummary'), content.indexOf('function renderNav'));
+  assert.match(summary, /<div class="profile-identity"><strong>\$\{escape\(accountEmail\)\}<\/strong><a class="profile-public"/);
+  assert.match(summary, /<\/div><button id="exit" class="sign-out">Sign out<\/button><\/header>/);
+  assert.doesNotMatch(summary, /<span>\$\{escape\(config\.title\)\}<\/span>/);
+});
+
+// The lit tab already says Profile: the card keeps the page's h1 for a screen
+// reader, out of sight, instead of a third "PROFILE" above the address.
+test('the profile card does not repeat the Profile tab', () => {
+  const summary = content.slice(content.indexOf('function profileSummary'), content.indexOf('function renderNav'));
+  assert.match(summary, /<h1 class="echoes-tab">Profile<\/h1>/);
+  assert.doesNotMatch(summary, /class="eyebrow">Profile/);
+});
+
+// The badge carries the app's name, Fidj's mark and the letter: shown at its
+// own size, wider and taller than the old activity badge.
+test('the profile shows the badge at its full size', () => {
+  assert.match(content, /public badge" width="190" height="28"/);
+});

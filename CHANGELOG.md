@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.27.0] - 2026-10-10
+
+- Generated apps open their profile on a compact card: the address beside the full-size exit-class badge, Sign out at the top right, and the person's initials on the Profile tab. They install @ofidj/entry 3.27.0 and @ofidj/node 3.27.0.
+
 ## [3.26.0] - 2026-10-05
 
 - The 3.26 series; generated apps install @ofidj/entry 3.26.0 and @ofidj/node 3.26.0.

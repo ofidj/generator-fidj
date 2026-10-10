@@ -1,4 +1,4 @@
-import {permissionLines, signInErrorMessage, formatDate, agreementRequired, agreementFromRefusal, agreementAddress, type ServiceAgreement, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, type SigninShape} from "@ofidj/entry";
+import {permissionLines, signInErrorMessage, formatDate, agreementRequired, agreementFromRefusal, agreementAddress, type ServiceAgreement, verificationPending, pollVerification, rememberSignIn, forgetSignIn, signInHint, profileAvatar, type SigninShape} from "@ofidj/entry";
 import {agreementScreen, bindAgreementScreen, bindPasswordReveal, acceptedAgreement, verificationWait, providerEntry, showEmailEntry, showVersionBadge, escape, masthead, highlightCells, badgeStrip, credentialFields, accountForm, passkeySupported, passkeyAssertion, walletDoor, memberCard, bindMemberHistory, oidcInteractionMarkup, oidcInteractionStyles, bindOidcInteraction} from "@ofidj/entry/dom";
 import {openProviderWindow, relayProviderAnswer, type ProviderWindow} from "@ofidj/entry/window";
 import { FidjNodeService, FidjOidcClient } from "@ofidj/node";
@@ -50,6 +50,7 @@ let stopWatchingVerification: (() => void) | null = null;
 // and the account screen says it again where it can be checked; the ID token of
 // a code flow carries only a subject, so this comes from the membership.
 let accountEmail = "";
+let accountName = "";
 // Whether the person asked for the app's own form. The entry is rebuilt on every
 // render, and a refused sign-in is a render: without this, pressing Continue
 // with the agreement unchecked folded the form away and left the complaint
@@ -96,9 +97,16 @@ function banner() {
 //
 // Signing out is not a place, so it is not a tab: it is a thing you do to an
 // account, and it lives on that account's screen.
+// "Profile", then the person: their initials on a disc whose colour
+// @ofidj/entry draws from their address, the mark Fidj's console gives them.
+function profileMark() {
+  const {initials, hue} = profileAvatar(accountName, accountEmail);
+  return `<span class="profile-mark" aria-hidden="true" style="--avatar-hue:${hue}">${escape(initials)}</span>`;
+}
+
 function appNav(current: "content" | "account") {
   const tab = (id: string, label: string, selected: boolean, profile = false) =>
-    `<button id="${id}"${selected ? ' class="selected" aria-current="page"' : ""}>${profile ? '<span class="profile-mark" aria-hidden="true"><svg viewBox="0 0 20 20"><circle cx="10" cy="7" r="3"/><path d="M4.5 16c.7-3 2.5-4.5 5.5-4.5s4.8 1.5 5.5 4.5"/></svg></span>' : ""}<span class="tab-label">${label}</span></button>`;
+    `<button id="${id}"${selected ? ' class="selected" aria-current="page"' : ""}><span class="tab-label">${label}</span>${profile ? profileMark() : ""}</button>`;
   const account = signedIn
     ? tab("account-tab", "Profile", current === "account", true)
     : tab("account-tab", "Sign in", false);
@@ -108,7 +116,10 @@ function appNav(current: "content" | "account") {
 function profileSummary() {
   const publicUrl = `${config.dashboardUrl}/#/pub/${encodeURIComponent(config.appId)}`;
   const badgeUrl = `${config.apiEndpoint}/apps/${encodeURIComponent(config.appId)}/badge`;
-  return `<header class="profile-summary"><div class="profile-summary-copy"><h1 class="eyebrow">Profile</h1><strong>${escape(accountEmail)}</strong><span>${escape(config.title)}</span></div><a class="profile-public" href="${escape(publicUrl)}" target="_blank" rel="noopener"><img src="${escape(badgeUrl)}" alt="${escape(config.title)} public badge" width="133" height="20"></a><button id="exit" class="sign-out">Sign out</button></header>`;
+  // Compact, and the same head as Fidj's own profile: the address beside this
+  // app's badge, and Sign out at the card's top right. The lit tab already
+  // says Profile, so the h1 is there for a screen reader only.
+  return `<header class="profile-summary"><div class="profile-summary-copy"><h1 class="echoes-tab">Profile</h1><div class="profile-identity"><strong>${escape(accountEmail)}</strong><a class="profile-public" href="${escape(publicUrl)}" target="_blank" rel="noopener"><img src="${escape(badgeUrl)}" alt="${escape(config.title)} public badge" width="190" height="28"></a></div></div><button id="exit" class="sign-out">Sign out</button></header>`;
 }
 
 // The bar belongs to the document, not to the screen being drawn: it survives
@@ -177,6 +188,7 @@ async function refresh() {
   // address the entry can offer next time comes from the membership the app
   // just read — not from a claim it does not have.
   accountEmail = String(me?.poc?.email || me?.username || "");
+  accountName = String(me?.name || "");
   rememberSignIn(config.appId, accountEmail);
 }
 async function action(task: () => Promise<void>) {
